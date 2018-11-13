@@ -2,13 +2,54 @@ import numpy as np
 from typing import Deque
 
 
+class NPuzzlesMap:
+
+    MIN_SHAPE = (3, 3)
+
+    def __init__(self, shape: tuple, initial_map: np.ndarray):
+        if shape < self.MIN_SHAPE:
+            raise self.BadMapError()
+        self.initial_map = initial_map
+        self.initial_state = State(self.initial_map)
+        dimension, _ = shape
+        terminal_array = np.append(np.arange(1, dimension**2), 0)
+        self.terminal_state = State(terminal_array)
+        # State.terminal_state = self.terminal_state
+
+    @classmethod
+    def from_file(cls, filename):
+        # TODO: Implement file reading here
+        shape = (0, 0)
+        initial_map = np.ndarray()
+        cls(shape, initial_map)
+
+    def __str__(self):
+        return f'Initial{self.initial_state}, Terminal{self.terminal_state}'
+
+    def __repr__(self):
+        return  self.__str__()
+
+    class BadMapError(Exception):
+        def __init__(self, message='Bad map', error=None):
+            super().__init__(message)
+            self.error = error
+
+
 class State:
 
+    terminal_map = None
+
     def __init__(self, data: np.ndarray, parent=None, ):
+        if not isinstance(data, np.ndarray) and data.size < 9:
+            raise state.BadMapError()
         self._map = data.astype(int)
-        self._flat_map = self._map.flatten()
+        self.flat_map = self._map.flatten()
         self.parent = parent
         self.g = parent.g + 1 if parent else 0
+        # TODO: Make better way
+        if self.terminal_map is None:
+            dimension, _ = self._map.shape
+            self.terminal_map = np.append(np.arange(1, dimension ** 2), 0)
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, self.__class__):
@@ -48,13 +89,18 @@ class State:
             raise self.BadMapError()
 
         wrong_placed_puzzles = 0
-        for i, puzzle in enumerate(self._flat_map):
-            if puzzle == 0 and i + 1 != len(self._flat_map):
+        for i, puzzle in enumerate(self.flat_map):
+            if puzzle == 0 and i + 1 != len(self.flat_map):
                 continue
             elif puzzle != i + 1:
                 wrong_placed_puzzles += 1
 
         return wrong_placed_puzzles
+
+    # @property
+    # def terminal_state(self):
+    #     np.append(np.arange(1, dimension ** 2), 0)
+    #     return
 
     @property
     def is_terminate(self) -> bool:
@@ -109,6 +155,54 @@ class TState(Deque):
 
 class Rule:
 
+    HEURISTICS_CHOICES = ('simple', 'manhattan', )
+    _heuristics = None
+
+    class WrongHeuristicsError(Exception):
+
+        def __init__(self, message='Invalid heuristics. Available are {}', error=None):
+            available_heuristics = ' '.join(Rule.HEURISTICS_CHOICES or [])
+            formatted_message = message.format(available_heuristics)
+            super().__init__(formatted_message)
+            self.error = error
+
+    @classmethod
+    def choose_heuristics(cls, heuristic_name: str) -> None:
+        if heuristic_name not in cls.HEURISTICS_CHOICES:
+            raise cls.WrongHeuristicsError()
+        prefix = 'heuristic_'
+        default_heuristic = prefix + cls.HEURISTICS_CHOICES[0]
+        cls._heuristics = cls.__dict__.get(prefix + heuristic_name, default_heuristic)
+
+    @staticmethod
+    def heuristic_simple(node: State) -> int:
+        """
+        Returns a number of puzzles at wrong place.
+        """
+        eq_array = np.equal(node._map, node.terminal_map)
+        wrong_placed_puzzles = len(eq_array[eq_array == False])
+
+        # Previous code
+        # wrong_placed_puzzles = 0
+        # for i, puzzle in enumerate(node.flat_map):
+        #     if puzzle == 0 and i + 1 != len(node.flat_map):
+        #         continue
+        #     elif puzzle != i + 1:
+        #         wrong_placed_puzzles += 1
+        return wrong_placed_puzzles
+
+    @staticmethod
+    def heuristic_manhattan(node: State) -> int:
+        """
+        Returns manhattan distance of all puzzles compare with terminal state
+        abs(cur(i,j) - target(i,j))
+        """
+        # total_distance =
+        total_sum = 0
+        for indx_pair, value in np.ndenumerate(node._map):
+            # TODO: Compare with indexes of terminal state
+            pass
+
     @staticmethod
     def is_terminate(state: State) -> bool:
         return state.h == 0
@@ -130,6 +224,15 @@ class Rule:
         :return: int
         """
         raise NotImplementedError()
+
+    @staticmethod
+    def distance(first: State, second: State) -> float:
+        """
+        This is a simple case. So distance between each state is 1
+        :return: 1.0
+        """
+        # raise NotImplementedError()
+        return 1.0
 
 
 if __name__ == '__main__':
@@ -161,10 +264,18 @@ if __name__ == '__main__':
 
         neighbours = Rule.neignbours(min_state)  # OR neighbours = min_state.all_neighbours
         for neighbour in neighbours:
+            g = min_state.g + Rule.distance(min_state, neighbour)
+
             if neighbours in _close:
                 continue
             is_g_better = False
+
             if neighbour not in _open:
                 _open.append(neighbour)
                 is_g_better = True
+            else:
+                is_g_better = g < neighbour.g
 
+            if is_g_better:
+                neighbour.parent = min_state
+                neighbour.g = g
