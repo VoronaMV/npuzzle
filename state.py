@@ -41,7 +41,6 @@ class NPuzzlesMap:
     def from_file(cls, filename):
         # TODO: Implement file reading here
         initial_map = cls.__map_from_file(filename)
-        # shape = initial_map.shape
         return cls(initial_map.shape, initial_map)
 
     def __str__(self):
@@ -67,6 +66,7 @@ class State:
         self.flat_map = self._map.flatten()
         self.parent = parent
         self.g = parent.g + 1 if parent else 0
+        self.f = None
         # TODO: Make better way
         if self.terminal_map is None:
             dimension, _ = self._map.shape
@@ -81,8 +81,6 @@ class State:
         return np.array_equal(self._map, other._map)
 
     def __str__(self):
-        # return f'State(f={self.h}, g={self.g}, h={self.h})'
-        # return f'State(g={self.g})'
         return str(self._map)
 
     def __repr__(self):
@@ -126,6 +124,16 @@ class State:
         map state (shift 0 right/left/up/down)
         """
         raise NotImplementedError()
+
+    # @property
+    # def f(self):
+    #     # self.f = 'aha'
+    #     return
+
+    # @f.setter
+    # def f(self, value):
+    #     print('BAWDASDASD')
+    #     self.f = value
 
     # @property
     # def h(self) -> int:
@@ -179,12 +187,22 @@ class TState(Deque):
 
     def find_min_state(self, heuristic: callable) -> State:
         min_state = self[0]
-        min_state_f = min_state.g + heuristic(min_state)
+        # min_state_f = min_state.g + heuristic(min_state)
+
+        if not min_state.f:
+            min_state.f = min_state.g + heuristic(min_state)
+
         for elem in self:
-            elem_f = elem.g + heuristic(elem)
-            if elem_f < min_state_f:
+            if not elem.f:
+                elem.f = elem.g + heuristic(elem)
+
+            # elem_f = elem.g + heuristic(elem)
+            # if elem_f < min_state_f:
+            #     min_state = elem
+            #     min_state_f = elem_f
+            if elem.f < min_state.f:
                 min_state = elem
-                min_state_f = elem_f
+                min_state.f = elem.f
         return min_state
 
     @staticmethod
@@ -252,11 +270,13 @@ class Rule:
         total_sum = 0
         for indx_pair, value in np.ndenumerate(node._map):
             # TODO: Compare with indexes of terminal state
-            pass
-
-    @staticmethod
-    def is_terminate(state: State) -> bool:
-        return state.h == 0
+            for t_indx_pair, t_value in np.ndenumerate(node.terminal_map):
+                if value == t_value:
+                    diff = np.subtract(indx_pair, t_indx_pair)
+                    abs_diff = abs(diff)
+                    total_sum += sum(abs_diff)
+                    break
+        return total_sum
 
     @staticmethod
     def neignbours(node: State) -> list:
@@ -276,20 +296,16 @@ class Rule:
                 non_empty_element = node._map[coordinates]
                 new_map[node.empty_puzzle_coord] = non_empty_element
                 new_map[coordinates] = 0
-                neighbours.append(State(new_map))
+                # TODO: ADD parent to neighbour
+                # new_state = State(new_map, parent=node)
+                # if new_state in _open or new_state in _closed:
+                #     continue
+                # else:
+                #     neighbours.append(new_state)
+                neighbours.append(State(new_map, parent=node))
             except:
                 continue
         return neighbours
-
-    @staticmethod
-    def h(state: State, model: str) -> int:
-        """
-        Should count heuristics according to chosen model
-        :param state: state obj
-        :param model: model name
-        :return: int
-        """
-        raise NotImplementedError()
 
     @staticmethod
     def distance(first: State, second: State) -> float:
@@ -319,7 +335,6 @@ if __name__ == '__main__':
     while _open:
         min_state = _open.find_min_state(Rule._heuristics)
         if min_state == terminal_state: # check if current state is terminal
-        # if Rule.is_terminate(min_state):
             solution = TState(elem for elem in _open.reverse_to_head(min_state))
             solution.reverse()  # now it is solution
             exit(str(solution))
@@ -327,6 +342,8 @@ if __name__ == '__main__':
         _close.append(min_state)
 
         neighbours = Rule.neignbours(min_state)  # OR neighbours = min_state.all_neighbours
+        # neighbours = Rule.neignbours(min_state, _open, _close)  # OR neighbours = min_state.all_neighbours
+
         for neighbour in neighbours:
             g = min_state.g + Rule.distance(min_state, neighbour)
 
