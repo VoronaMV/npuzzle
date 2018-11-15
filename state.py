@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import datetime
 import numpy as np
 from typing import Deque
 
@@ -18,7 +19,6 @@ class NPuzzlesMap:
         terminal_flat_array = np.append(np.arange(1, dimension**2), 0)
         terminal_array = np.reshape(terminal_flat_array, shape)
         self.terminal_state = State(terminal_array)
-        # State.terminal_state = self.terminal_state
 
     @staticmethod
     def __map_from_file(filename: str) -> np.ndarray:
@@ -39,7 +39,6 @@ class NPuzzlesMap:
 
     @classmethod
     def from_file(cls, filename):
-        # TODO: Implement file reading here
         initial_map = cls.__map_from_file(filename)
         return cls(initial_map.shape, initial_map)
 
@@ -117,78 +116,12 @@ class State:
             if elem == 0:
                 return indx_pair
 
-    @property
-    def all_neighbours(self):
-        """
-        Should return set of app states that can be neighbours to current
-        map state (shift 0 right/left/up/down)
-        """
-        raise NotImplementedError()
-
-    # @property
-    # def f(self):
-    #     # self.f = 'aha'
-    #     return
-
-    # @f.setter
-    # def f(self, value):
-    #     print('BAWDASDASD')
-    #     self.f = value
-
-    # @property
-    # def h(self) -> int:
-    #     """
-    #     Returns a number of puzzles at wrong place.
-    #     """
-    #     if not isinstance(self._map, np.ndarray) and self._map.size < 9:
-    #         raise self.BadMapError()
-    #
-    #     wrong_placed_puzzles = 0
-    #     for i, puzzle in enumerate(self.flat_map):
-    #         if puzzle == 0 and i + 1 != len(self.flat_map):
-    #             continue
-    #         elif puzzle != i + 1:
-    #             wrong_placed_puzzles += 1
-    #
-    #     return wrong_placed_puzzles
-
-    # @property
-    # def is_terminate(self) -> bool:
-    #     """
-    #     Check if all puzzles at its places
-    #     :return: bool
-    #     """
-    #     # return self._map == self.
-    #     return self.h == 0
-    #
-    # @property
-    # def f(self) -> int:
-    #     return self.g + self.h
-
 
 # TODO: Do we need Dequee?
 class TState(Deque):
 
-    @staticmethod
-    def neighbours(current_state: super) -> super:
-        raise NotImplementedError()
-
-    @staticmethod
-    def distance(a, b) -> int:
-        raise NotImplementedError()
-
-    @property
-    def h(self):
-        raise NotImplementedError()
-
-    @property
-    def is_terminate(self):
-        raise NotImplementedError()
-
     def find_min_state(self, heuristic: callable) -> State:
         min_state = self[0]
-        # min_state_f = min_state.g + heuristic(min_state)
-
         if not min_state.f:
             min_state.f = min_state.g + heuristic(min_state)
 
@@ -196,10 +129,6 @@ class TState(Deque):
             if not elem.f:
                 elem.f = elem.g + heuristic(elem)
 
-            # elem_f = elem.g + heuristic(elem)
-            # if elem_f < min_state_f:
-            #     min_state = elem
-            #     min_state_f = elem_f
             if elem.f < min_state.f:
                 min_state = elem
                 min_state.f = elem.f
@@ -216,6 +145,7 @@ class TState(Deque):
         return next(matches, False)
 
     def __str__(self):
+        # TODO: Change it
         res = ''
         for elem in self:
             res += str(elem) + '\n\n'
@@ -250,14 +180,6 @@ class Rule:
         """
         eq_array = np.equal(node._map, node.terminal_map)
         wrong_placed_puzzles = len(eq_array[eq_array == False])
-
-        # Previous code
-        # wrong_placed_puzzles = 0
-        # for i, puzzle in enumerate(node.flat_map):
-        #     if puzzle == 0 and i + 1 != len(node.flat_map):
-        #         continue
-        #     elif puzzle != i + 1:
-        #         wrong_placed_puzzles += 1
         return wrong_placed_puzzles
 
     @staticmethod
@@ -266,10 +188,9 @@ class Rule:
         Returns manhattan distance of all puzzles compare with terminal state
         abs(cur(i,j) - target(i,j))
         """
-        # total_distance =
         total_sum = 0
         for indx_pair, value in np.ndenumerate(node._map):
-            # TODO: Compare with indexes of terminal state
+            # Compare with indexes of terminal state
             for t_indx_pair, t_value in np.ndenumerate(node.terminal_map):
                 if value == t_value:
                     diff = np.subtract(indx_pair, t_indx_pair)
@@ -296,12 +217,6 @@ class Rule:
                 non_empty_element = node._map[coordinates]
                 new_map[node.empty_puzzle_coord] = non_empty_element
                 new_map[coordinates] = 0
-                # TODO: ADD parent to neighbour
-                # new_state = State(new_map, parent=node)
-                # if new_state in _open or new_state in _closed:
-                #     continue
-                # else:
-                #     neighbours.append(new_state)
                 neighbours.append(State(new_map, parent=node))
             except:
                 continue
@@ -319,6 +234,8 @@ class Rule:
 
 if __name__ == '__main__':
 
+    start_time = datetime.datetime.now()
+
     heuristics_name = sys.argv[1].lower()
     Rule.choose_heuristics(heuristics_name)
 
@@ -334,16 +251,19 @@ if __name__ == '__main__':
 
     while _open:
         min_state = _open.find_min_state(Rule._heuristics)
-        if min_state == terminal_state: # check if current state is terminal
+        if min_state == terminal_state:
             solution = TState(elem for elem in _open.reverse_to_head(min_state))
             solution.reverse()  # now it is solution
+
+            end_time = datetime.datetime.now()
+            delta = end_time -start_time
+            print(delta.seconds)
+
             exit(str(solution))
         _open.remove(min_state)
         _close.append(min_state)
 
-        neighbours = Rule.neignbours(min_state)  # OR neighbours = min_state.all_neighbours
-        # neighbours = Rule.neignbours(min_state, _open, _close)  # OR neighbours = min_state.all_neighbours
-
+        neighbours = Rule.neignbours(min_state)
         for neighbour in neighbours:
             g = min_state.g + Rule.distance(min_state, neighbour)
 
