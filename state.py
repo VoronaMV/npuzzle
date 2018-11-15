@@ -120,6 +120,18 @@ class State:
 # TODO: Do we need Dequee?
 class TState(Deque):
 
+    def __init__(self, *args, **kwargs):
+        self.appends_amount = 0
+        super().__init__(*args, **kwargs)
+
+    @property
+    def time_complexity(self):
+        return self.appends_amount
+
+    def append(self, item):
+        self.appends_amount += 1
+        return super().append(item)
+
     def find_min_state(self, heuristic: callable) -> State:
         min_state = self[0]
         if not min_state.f:
@@ -254,11 +266,14 @@ if __name__ == '__main__':
         if min_state == terminal_state:
             solution = TState(elem for elem in _open.reverse_to_head(min_state))
             solution.reverse()  # now it is solution
-
+            moves_number = len(solution)
             end_time = datetime.datetime.now()
-            delta = end_time -start_time
-            print(delta.seconds)
-
+            delta = end_time - start_time
+            print('seconds: ', delta.seconds)
+            print('size complexity: SHOULD BE DONE')
+            print(f'size complexity: {_open.time_complexity}')
+            print(f'Moves: {moves_number}')
+            # print(globals().keys())
             exit(str(solution))
         _open.remove(min_state)
         _close.append(min_state)
