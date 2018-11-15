@@ -244,6 +244,9 @@ class Rule:
         return 1.0
 
 
+def get_size_comlexity(_open, _close, *args):
+    return len(_open) + len(_close) + len(args)
+
 if __name__ == '__main__':
 
     start_time = datetime.datetime.now()
@@ -261,6 +264,9 @@ if __name__ == '__main__':
     _close = TState()
     _open.append(initial_state)
 
+    # TODO: Check for validity. It's only assumption
+    size_comlexity = get_size_comlexity(_open, _close)
+
     while _open:
         min_state = _open.find_min_state(Rule._heuristics)
         if min_state == terminal_state:
@@ -270,8 +276,8 @@ if __name__ == '__main__':
             end_time = datetime.datetime.now()
             delta = end_time - start_time
             print('seconds: ', delta.seconds)
-            print('size complexity: SHOULD BE DONE')
-            print(f'size complexity: {_open.time_complexity}')
+            print(f'size complexity: {size_comlexity}')
+            print(f'time complexity: {_open.time_complexity}')
             print(f'Moves: {moves_number}')
             # print(globals().keys())
             exit(str(solution))
@@ -279,6 +285,11 @@ if __name__ == '__main__':
         _close.append(min_state)
 
         neighbours = Rule.neignbours(min_state)
+
+        tmp_size = get_size_comlexity(_open, _close, *neighbours)
+        if size_comlexity < tmp_size:
+            size_comlexity = tmp_size
+
         for neighbour in neighbours:
             g = min_state.g + Rule.distance(min_state, neighbour)
 
