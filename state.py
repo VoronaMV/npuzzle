@@ -1,6 +1,8 @@
 import os
 import re
 import sys
+import math
+import time
 import numpy as np
 from typing import Deque
 
@@ -224,7 +226,7 @@ class TState(Deque):
 
 class Rule:
 
-    HEURISTICS_CHOICES = ('simple', 'manhattan', )
+    HEURISTICS_CHOICES = ('simple', 'manhattan', 'diagonal', 'euclidean',)
     _heuristics = None
 
     class WrongHeuristicsError(Exception):
@@ -279,6 +281,31 @@ class Rule:
         return total_sum
 
     @staticmethod
+    def heuristic_diagonal(node: State) -> int:
+        total_sum = 0
+        for indx_pair, value in np.ndenumerate(node._map):
+            for t_indx_pair, t_value in np.ndenumerate(node.terminal_map):
+                if value == t_value:
+                    diff = np.subtract(indx_pair, t_indx_pair)
+                    abs_diff = abs(diff)
+                    total_sum += sum(abs_diff) + (math.sqrt(2) - 2) * min(abs_diff)
+                    break
+        return total_sum
+
+    @staticmethod
+    def heuristic_euclidean(node: State) -> int:
+        total_sum = 0
+        for indx_pair, value in np.ndenumerate(node._map):
+            for t_indx_pair, t_value in np.ndenumerate(node.terminal_map):
+                if value == t_value:
+                    diff = np.subtract(indx_pair, t_indx_pair)
+                    abs_diff = abs(diff)
+                    total_sum += math.sqrt(abs_diff[0] ** 2 + abs_diff[1] ** 2)
+                    break
+        return total_sum
+
+
+    @staticmethod
     def neignbours(node: State) -> list:
         """
         Should return set of app states that can be neighbours to current
@@ -318,7 +345,7 @@ class Rule:
 
 
 if __name__ == '__main__':
-
+    start = time.time()
     heuristics_name = sys.argv[1].lower()
     Rule.choose_heuristics(heuristics_name)
 
@@ -337,6 +364,8 @@ if __name__ == '__main__':
         if min_state == terminal_state: # check if current state is terminal
             solution = TState(elem for elem in _open.reverse_to_head(min_state))
             solution.reverse()  # now it is solution
+            end = time.time()
+            print(end - start)
             exit(str(solution))
         _open.remove(min_state)
         _close.append(min_state)
