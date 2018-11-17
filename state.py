@@ -4,6 +4,7 @@ import sys
 import datetime
 import numpy as np
 from typing import Deque
+from hashlib import sha1, md5
 
 
 class NPuzzlesMap:
@@ -17,7 +18,9 @@ class NPuzzlesMap:
         self.initial_state = State(self.initial_map)
         dimension, _ = shape
         terminal_flat_array = np.append(np.arange(1, dimension**2), 0)
-        terminal_array = np.reshape(terminal_flat_array, shape)
+        # terminal_array = np.reshape(terminal_flat_array, shape)
+        terminal_array = np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
+        # terminal_array = np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]])
         self.terminal_state = State(terminal_array)
 
     @staticmethod
@@ -56,7 +59,9 @@ class NPuzzlesMap:
 
 class State:
 
-    terminal_map = None
+    terminal_map = np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
+    # terminal_map = np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]])
+    # terminal_map = None
 
     def __init__(self, data: np.ndarray, parent=None, ):
         if not isinstance(data, np.ndarray) and data.size < 9:
@@ -68,16 +73,25 @@ class State:
         self.f = None
         # TODO: Make better way
         if self.terminal_map is None:
-            dimension, _ = self._map.shape
-            terminal_flat_array = np.append(np.arange(1, dimension ** 2), 0)
-            self.terminal_map = np.reshape(terminal_flat_array, self._map.shape)
+            # dimension, _ = self._map.shape
+            # terminal_flat_array = np.append(np.arange(1, dimension ** 2), 0)
+            # self.terminal_map = np.reshape(terminal_flat_array, self._map.shape)
+            self.terminal_map = np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
+            # self.terminal_map = np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]])
 
         self.empty_puzzle_coord = self.empty_element_coordinates(self._map)
+        self.hash = sha1(self._map).hexdigest()
 
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, self.__class__):
-            raise self.UnknownInstanceError()
-        return np.array_equal(self._map, other._map)
+        # TODO: FLAG is PARENt WAS CHANGED
+        # self.changed = False
+
+    # def __eq__(self, other) -> bool:
+    #     if not isinstance(other, self.__class__):
+    #         raise self.UnknownInstanceError()
+    #     return np.array_equal(self._map, other._map)
+
+    def __eq__(self, other):
+        return self.hash == other.hash
 
     def __str__(self):
         return str(self._map)
@@ -134,11 +148,11 @@ class TState(Deque):
 
     def find_min_state(self, heuristic: callable) -> State:
         min_state = self[0]
-        if not min_state.f:
+        if not min_state.f:# or min_state.changed is True:
             min_state.f = min_state.g + heuristic(min_state)
 
         for elem in self:
-            if not elem.f:
+            if not elem.f:# or elem.changed is True:
                 elem.f = elem.g + heuristic(elem)
 
             if elem.f < min_state.f:
@@ -222,8 +236,8 @@ class Rule:
         for direction in directions:
             coordinates = node.shift_empty_puzzle(direction)
             try:
-                if coordinates[0] < 0 and coordinates[1] < 0:
-                    raise Exception()
+                if coordinates[0] < 0 or coordinates[1] < 0:
+                    continue
                 # TODO: switch elements
                 new_map = node._map.copy()
                 non_empty_element = node._map[coordinates]
@@ -254,11 +268,17 @@ if __name__ == '__main__':
     heuristics_name = sys.argv[1].lower()
     Rule.choose_heuristics(heuristics_name)
 
-    # npazzle = NPuzzlesMap.from_file('4_4_map.txt')
-    npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
+    npazzle = NPuzzlesMap.from_file('4_4_map.txt')
+    # npazzle = NPuzzlesMap.from_file('4_4_map_o.txt')
+    # npazzle = NPuzzlesMap.from_file('3_new.txt')
+    # npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
+    # npazzle = NPuzzlesMap.from_file('3_3_map.txt')
 
     initial_state = npazzle.initial_state
     terminal_state = npazzle.terminal_state
+
+    print(initial_state)
+    print(terminal_state)
 
     _open = TState()
     _close = TState()
@@ -269,6 +289,9 @@ if __name__ == '__main__':
 
     while _open:
         min_state = _open.find_min_state(Rule._heuristics)
+
+        # print(min_state)
+
         if min_state == terminal_state:
             solution = TState(elem for elem in _open.reverse_to_head(min_state))
             solution.reverse()  # now it is solution
@@ -279,7 +302,6 @@ if __name__ == '__main__':
             print(f'size complexity: {size_comlexity}')
             print(f'time complexity: {_open.time_complexity}')
             print(f'Moves: {moves_number}')
-            # print(globals().keys())
             exit(str(solution))
         _open.remove(min_state)
         _close.append(min_state)
@@ -301,8 +323,11 @@ if __name__ == '__main__':
                 _open.append(neighbour)
                 is_g_better = True
             else:
+                # i = _open.index(neighbour)
+                # neighbour = _open[i]
                 is_g_better = g < neighbour.g
 
             if is_g_better:
                 neighbour.parent = min_state
                 neighbour.g = g
+                # neighbour.changed = True
