@@ -316,7 +316,7 @@ class Rule:
         for direction in directions:
             coordinates = node.shift_empty_puzzle(direction)
             try:
-                if coordinates[0] < 0 and coordinates[1] < 0:
+                if coordinates[0] < 0 or coordinates[1] < 0:
                     raise Exception()
                 # TODO: switch elements
                 new_map = node._map.copy()
