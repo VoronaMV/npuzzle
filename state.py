@@ -168,7 +168,6 @@ class TState(Deque):
         #         min_state = elem
         #         min_state_f = elem_f
 
-
         min_state = self[0]
         if not min_state.f:# or min_state.changed is True:
             min_state.f = min_state.g + heuristic(min_state)
@@ -308,6 +307,7 @@ class Rule:
 def get_size_comlexity(_open, _close, *args):
     return len(_open) + len(_close) + len(args)
 
+
 if __name__ == '__main__':
     start_time = time.time()
     heuristics_name = sys.argv[1].lower()
@@ -316,8 +316,8 @@ if __name__ == '__main__':
     # npazzle = NPuzzlesMap.from_file('4_4_map.txt')
     # npazzle = NPuzzlesMap.from_file('4_4_map_o.txt')
     # npazzle = NPuzzlesMap.from_file('3_new.txt')
-    npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
-    # npazzle = NPuzzlesMap.from_file('3_3_map.txt')
+    # npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
+    npazzle = NPuzzlesMap.from_file('3_3_map.txt')
 
     initial_state = npazzle.initial_state
     terminal_state = npazzle.terminal_state
@@ -335,19 +335,17 @@ if __name__ == '__main__':
     while _open:
         min_state = _open.find_min_state(Rule._heuristics)
 
-        # print(min_state)
-
         if min_state == terminal_state:
             solution = TState(elem for elem in _open.reverse_to_head(min_state))
             solution.reverse()  # now it is solution
             moves_number = len(solution)
             end_time = time.time()
             delta = end_time - start_time
-            print('seconds: ', delta.seconds)
+            print('seconds: ', delta)
             print(f'size complexity: {size_comlexity}')
             print(f'time complexity: {_open.time_complexity}')
             print(f'Moves: {moves_number}')
-            print(end - start)
+            print(end_time - start_time)
             exit(str(solution))
         _open.remove(min_state)
         _close.append(min_state)
