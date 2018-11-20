@@ -7,6 +7,13 @@ from typing import Deque
 from hashlib import sha1, md5
 
 
+TERMINAL_STATES = {
+    3: np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]]),
+    4: np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
+}
+
+
+
 class NPuzzlesMap:
 
     MIN_SHAPE = (3, 3)
@@ -19,8 +26,9 @@ class NPuzzlesMap:
         dimension, _ = shape
         terminal_flat_array = np.append(np.arange(1, dimension**2), 0)
         # terminal_array = np.reshape(terminal_flat_array, shape)
-        terminal_array = np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
-        # terminal_array = np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]])
+        # TODO: BE careful
+        terminal_array = TERMINAL_STATES.get(dimension)
+
         self.terminal_state = State(terminal_array)
 
     @staticmethod
@@ -59,9 +67,9 @@ class NPuzzlesMap:
 
 class State:
 
-    terminal_map = np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
+    # terminal_map = np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
     # terminal_map = np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]])
-    # terminal_map = None
+    terminal_map = None
 
     def __init__(self, data: np.ndarray, parent=None, ):
         if not isinstance(data, np.ndarray) and data.size < 9:
@@ -76,7 +84,9 @@ class State:
             # dimension, _ = self._map.shape
             # terminal_flat_array = np.append(np.arange(1, dimension ** 2), 0)
             # self.terminal_map = np.reshape(terminal_flat_array, self._map.shape)
-            self.terminal_map = np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
+            # self.terminal_map = np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
+            dimension, _ = self._map.shape
+            self.terminal_map = TERMINAL_STATES.get(dimension)
             # self.terminal_map = np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]])
 
         self.empty_puzzle_coord = self.empty_element_coordinates(self._map)
@@ -147,6 +157,17 @@ class TState(Deque):
         return super().append(item)
 
     def find_min_state(self, heuristic: callable) -> State:
+        # min_state = self[0]
+        # min_state_f = min_state.g + heuristic(min_state)
+        #
+        # for elem in self:
+        #     elem_f = elem.g + heuristic(elem)
+        #
+        #     if elem_f < min_state_f:
+        #         min_state = elem
+        #         min_state_f = elem_f
+
+
         min_state = self[0]
         if not min_state.f:# or min_state.changed is True:
             min_state.f = min_state.g + heuristic(min_state)
@@ -268,10 +289,10 @@ if __name__ == '__main__':
     heuristics_name = sys.argv[1].lower()
     Rule.choose_heuristics(heuristics_name)
 
-    npazzle = NPuzzlesMap.from_file('4_4_map.txt')
+    # npazzle = NPuzzlesMap.from_file('4_4_map.txt')
     # npazzle = NPuzzlesMap.from_file('4_4_map_o.txt')
     # npazzle = NPuzzlesMap.from_file('3_new.txt')
-    # npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
+    npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
     # npazzle = NPuzzlesMap.from_file('3_3_map.txt')
 
     initial_state = npazzle.initial_state
