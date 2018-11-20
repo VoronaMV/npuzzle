@@ -61,6 +61,16 @@ def make_goal(s):
     return puzzle
 
 
+def stringify_map(map, map_size):
+    space_per_element = len(str(map_size ** 2))
+    stringified_map = ''
+    for y in range(map_size):
+        for x in range(map_size):
+            stringified_map += str(map[x + y * map_size]).rjust(space_per_element) + ' '
+        stringified_map += '\n'
+    return stringified_map
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
@@ -77,26 +87,26 @@ if __name__ == "__main__":
 
     if args.solvable and args.unsolvable:
         print("Can't be both solvable AND unsolvable, dummy !")
-        sys.exit(1)
+        exit(1)
 
     if args.size < 3:
         print("Can't generate a puzzle with size lower than 2. It says so in the help. Dummy.")
-        sys.exit(1)
+        exit(1)
 
-    if not args.solvable and not args.unsolvable:
-        solv = random.choice([True, False])
-    elif args.solvable:
-        solv = True
+    if args.solvable:
+        is_solvable = True
     elif args.unsolvable:
-        solv = False
+        is_solvable = False
+    else:
+        is_solvable = random.choice([True, False])
 
-    s = args.size
+    map_size = args.size
 
-    puzzle = make_puzzle(s, solvable=solv, iterations=args.iterations)
+    puzzle = make_puzzle(map_size, solvable=is_solvable, iterations=args.iterations)
 
-    w = len(str(s * s))
-    print("# This puzzle is %s" % ("solvable" if solv else "unsolvable"))
-    print("%d" % s)
-    for y in range(s):
-        for x in range(s):
-            print("%s" % (str(puzzle[x + y * s]).rjust(w)), print)
+    is_solvable_str = "solvable" if is_solvable else "unsolvable"
+    print(f"# This puzzle is {is_solvable_str}")
+    print(f'{map_size}')
+
+    stringified_map = stringify_map(puzzle, map_size)
+    print(stringified_map, end='')
