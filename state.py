@@ -4,7 +4,7 @@ import sys
 import math
 import time
 import numpy as np
-from typing import Deque
+from typing import Deque, List
 from hashlib import sha1, md5
 
 
@@ -12,7 +12,6 @@ TERMINAL_STATES = {
     3: np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]]),
     4: np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
 }
-
 
 
 class NPuzzlesMap:
@@ -94,12 +93,15 @@ class State:
         self.hash = sha1(self._map).hexdigest()
 
         # TODO: FLAG is PARENt WAS CHANGED
-        # self.changed = False
 
     # def __eq__(self, other) -> bool:
     #     if not isinstance(other, self.__class__):
     #         raise self.UnknownInstanceError()
     #     return np.array_equal(self._map, other._map)
+
+    def set_f(self, new_f):
+        self.f = new_f
+        return self.f
 
     def __eq__(self, other):
         return self.hash == other.hash
@@ -143,7 +145,8 @@ class State:
 
 
 # TODO: Do we need Dequee?
-class TState(Deque):
+# class TState(Deque):
+class TState(List):
 
     def __init__(self, *args, **kwargs):
         self.appends_amount = 0
@@ -158,25 +161,16 @@ class TState(Deque):
         return super().append(item)
 
     def find_min_state(self, heuristic: callable) -> State:
-        # min_state = self[0]
-        # min_state_f = min_state.g + heuristic(min_state)
-        #
-        # for elem in self:
-        #     elem_f = elem.g + heuristic(elem)
-        #
-        #     if elem_f < min_state_f:
-        #         min_state = elem
-        #         min_state_f = elem_f
-
         min_state = self[0]
-        if not min_state.f:# or min_state.changed is True:
+        if not min_state.f:
             min_state.f = min_state.g + heuristic(min_state)
 
         for elem in self:
             if not elem.f:# or elem.changed is True:
                 elem.f = elem.g + heuristic(elem)
 
-            if elem.f < min_state.f:
+            if elem.f <= min_state.f:
+
                 min_state = elem
                 min_state.f = elem.f
         return min_state
@@ -314,15 +308,19 @@ if __name__ == '__main__':
     Rule.choose_heuristics(heuristics_name)
 
     # npazzle = NPuzzlesMap.from_file('4_4_map.txt')
-    # npazzle = NPuzzlesMap.from_file('4_4_map_o.txt')
+    npazzle = NPuzzlesMap.from_file('4_4_map_o.txt')
+    # npazzle = NPuzzlesMap.from_file('a.txt')
+
     # npazzle = NPuzzlesMap.from_file('3_new.txt')
     # npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
-    npazzle = NPuzzlesMap.from_file('3_3_map.txt')
+    # npazzle = NPuzzlesMap.from_file('3_3_map.txt')
 
     initial_state = npazzle.initial_state
     terminal_state = npazzle.terminal_state
 
+    print('INITIAL')
     print(initial_state)
+    print('TERMINAL')
     print(terminal_state)
 
     _open = TState()
@@ -367,11 +365,11 @@ if __name__ == '__main__':
                 _open.append(neighbour)
                 is_g_better = True
             else:
-                # i = _open.index(neighbour)
-                # neighbour = _open[i]
-                is_g_better = g < neighbour.g
+                i = _open.index(neighbour)
+                neighbour = _open[i]
+                is_g_better = g <= neighbour.g
 
             if is_g_better:
                 neighbour.parent = min_state
                 neighbour.g = g
-                # neighbour.changed = True
+                neighbour.f = neighbour.g + Rule._heuristics(neighbour)
