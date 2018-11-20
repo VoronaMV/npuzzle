@@ -1,7 +1,8 @@
 import os
 import re
 import sys
-import datetime
+import math
+import time
 import numpy as np
 from typing import Deque
 from hashlib import sha1, md5
@@ -180,7 +181,7 @@ class TState(Deque):
 
 class Rule:
 
-    HEURISTICS_CHOICES = ('simple', 'manhattan', )
+    HEURISTICS_CHOICES = ('simple', 'manhattan', 'diagonal', 'euclidean',)
     _heuristics = None
 
     class WrongHeuristicsError(Exception):
@@ -226,6 +227,31 @@ class Rule:
         return total_sum
 
     @staticmethod
+    def heuristic_diagonal(node: State) -> int:
+        total_sum = 0
+        for indx_pair, value in np.ndenumerate(node._map):
+            for t_indx_pair, t_value in np.ndenumerate(node.terminal_map):
+                if value == t_value:
+                    diff = np.subtract(indx_pair, t_indx_pair)
+                    abs_diff = abs(diff)
+                    total_sum += sum(abs_diff) + (math.sqrt(2) - 2) * min(abs_diff)
+                    break
+        return total_sum
+
+    @staticmethod
+    def heuristic_euclidean(node: State) -> int:
+        total_sum = 0
+        for indx_pair, value in np.ndenumerate(node._map):
+            for t_indx_pair, t_value in np.ndenumerate(node.terminal_map):
+                if value == t_value:
+                    diff = np.subtract(indx_pair, t_indx_pair)
+                    abs_diff = abs(diff)
+                    total_sum += math.sqrt(abs_diff[0] ** 2 + abs_diff[1] ** 2)
+                    break
+        return total_sum
+
+
+    @staticmethod
     def neignbours(node: State) -> list:
         """
         Should return set of app states that can be neighbours to current
@@ -262,9 +288,7 @@ def get_size_comlexity(_open, _close, *args):
     return len(_open) + len(_close) + len(args)
 
 if __name__ == '__main__':
-
-    start_time = datetime.datetime.now()
-
+    start_time = time.time()
     heuristics_name = sys.argv[1].lower()
     Rule.choose_heuristics(heuristics_name)
 
@@ -296,12 +320,13 @@ if __name__ == '__main__':
             solution = TState(elem for elem in _open.reverse_to_head(min_state))
             solution.reverse()  # now it is solution
             moves_number = len(solution)
-            end_time = datetime.datetime.now()
+            end_time = time.time()
             delta = end_time - start_time
             print('seconds: ', delta.seconds)
             print(f'size complexity: {size_comlexity}')
             print(f'time complexity: {_open.time_complexity}')
             print(f'Moves: {moves_number}')
+            print(end - start)
             exit(str(solution))
         _open.remove(min_state)
         _close.append(min_state)
