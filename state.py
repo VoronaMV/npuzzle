@@ -6,11 +6,14 @@ import time
 import numpy as np
 from typing import Deque, List
 from hashlib import sha1, md5
-
+from queue import PriorityQueue
+import heapq
 
 TERMINAL_STATES = {
-    3: np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]]),
-    4: np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
+    # 3: np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]]),
+    # 4: np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]]),
+    3: np.array([[1, 2, 3], [4, 5, 6], [7, 8, 0]]),
+    4: np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 0]])
 }
 
 
@@ -143,10 +146,13 @@ class State:
             if elem == 0:
                 return indx_pair
 
+    def __lt__(self, other):
+        return self.f < other.f
+
 
 # TODO: Do we need Dequee?
-# class TState(Deque):
-class TState(List):
+class TState(Deque):
+# class TState(List):
 
     def __init__(self, *args, **kwargs):
         self.appends_amount = 0
@@ -160,19 +166,22 @@ class TState(List):
         self.appends_amount += 1
         return super().append(item)
 
-    def find_min_state(self, heuristic: callable) -> State:
+    def find_min_state(self, heuristic: callable, test=False):# -> State:
         min_state = self[0]
         if not min_state.f:
             min_state.f = min_state.g + heuristic(min_state)
 
-        for elem in self:
+        indx = 0
+        for i, elem in enumerate(self):
             if not elem.f:# or elem.changed is True:
                 elem.f = elem.g + heuristic(elem)
 
             if elem.f <= min_state.f:
-
+                indx = i
                 min_state = elem
                 min_state.f = elem.f
+        if test:
+            return min_state, indx
         return min_state
 
     @staticmethod
@@ -212,7 +221,7 @@ class Rule:
             raise cls.WrongHeuristicsError()
         prefix = 'heuristic_'
         default_heuristic = prefix + cls.HEURISTICS_CHOICES[0]
-        cls._heuristics = cls.__dict__.get(prefix + heuristic_name, default_heuristic)
+        cls._heuristics = cls.__dict__.get(prefix + heuristic_name, cls.__dict__[default_heuristic])
 
     @staticmethod
     def heuristic_simple(node: State) -> int:
@@ -308,11 +317,13 @@ if __name__ == '__main__':
     Rule.choose_heuristics(heuristics_name)
 
     # npazzle = NPuzzlesMap.from_file('4_4_map.txt')
-    npazzle = NPuzzlesMap.from_file('4_4_map_o.txt')
+    # npazzle = NPuzzlesMap.from_file('3_s.txt')
+    # npazzle = NPuzzlesMap.from_file('4_s.txt')
+    # npazzle = NPuzzlesMap.from_file('4_4_map_o.txt')
     # npazzle = NPuzzlesMap.from_file('a.txt')
 
     # npazzle = NPuzzlesMap.from_file('3_new.txt')
-    # npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
+    npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
     # npazzle = NPuzzlesMap.from_file('3_3_map.txt')
 
     initial_state = npazzle.initial_state
@@ -332,6 +343,8 @@ if __name__ == '__main__':
 
     while _open:
         min_state = _open.find_min_state(Rule._heuristics)
+
+        # min_state = _open.popleft()
 
         if min_state == terminal_state:
             solution = TState(elem for elem in _open.reverse_to_head(min_state))
@@ -362,12 +375,25 @@ if __name__ == '__main__':
             is_g_better = False
 
             if neighbour not in _open:
+
+                neighbour.f = neighbour.g + Rule._heuristics(neighbour)
+
+                # if not _open or neighbour < _open[0]:
+                #     _open.appendleft(neighbour)
+                # elif _open[-1] < neighbour:
+                #     _open.append(neighbour)
+                # else:
+                #     tmp_min, i = _open.find_min_state(Rule._heuristics, test=True)
+                #     if neighbour < tmp_min:
+                #         _open.insert(i, neighbour)
+                #     else:
+                #         _open.insert(i + 1, neighbour)
                 _open.append(neighbour)
                 is_g_better = True
             else:
                 i = _open.index(neighbour)
                 neighbour = _open[i]
-                is_g_better = g <= neighbour.g
+                is_g_better = g < neighbour.g
 
             if is_g_better:
                 neighbour.parent = min_state
