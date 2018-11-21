@@ -7,7 +7,7 @@ import numpy as np
 from generator import generate_puzzle
 from hashlib import sha1
 from typing import Deque
-from queue import PriorityQueue, Full
+from queue import PriorityQueue
 
 
 TERMINAL_STATES = {
@@ -123,7 +123,6 @@ class State:
         self._map = data.astype(int)
         self.flat_map = self._map.flatten()
         self.parent = parent
-        # TODO: Check it
         self.g = parent.g + 1 if parent else 0
         # TODO: Make better way
         if self.terminal_map is None:
@@ -183,6 +182,12 @@ class State:
         else:
             return new_coords
 
+    def set_metrics(self, heuristic: callable, g=None):
+        # TODO: Make exception for no heuristics
+        if g:
+            self.g = g
+        self.f = self.g + heuristic(self)
+
     @staticmethod
     def empty_element_coordinates(_map: np.ndarray) -> tuple:
         for indx_pair, elem in np.ndenumerate(_map):
@@ -229,20 +234,6 @@ class TStateDeque(Deque):
     def append(self, item):
         self.appends_amount += 1
         return super().append(item)
-
-    def find_min_state(self, heuristic: callable) -> State:
-        min_state = self[0]
-        if not min_state.f:
-            min_state.f = min_state.g + heuristic(min_state)
-
-        for elem in self:
-            if not elem.f:
-                elem.f = elem.g + heuristic(elem)
-
-            if elem.f < min_state.f:
-                min_state = elem
-                min_state.f = elem.f
-        return min_state
 
     @staticmethod
     def reverse_to_head(state: State) -> iter:
@@ -415,7 +406,7 @@ Default value is M''')
     print('solavble?', is_solvable(initial_state._map, dimension=initial_state._map.shape[1]))
 
     while not _open.empty():
-        min_state = _open.get()
+        min_state = _open.get_nowait()
 
         if min_state == terminal_state:
             solution = TStateDeque(elem for elem in _close.reverse_to_head(min_state))
@@ -439,30 +430,16 @@ Default value is M''')
 
             g = min_state.g + Rule.distance(min_state, neighbour)
 
-            is_g_better = False
-
             if neighbour not in _open:
                 neighbour.parent = min_state
-                neighbour.g = g
-                neighbour.f = neighbour.g + Rule._heuristics(neighbour)
-                # try:
-                #     _open.put_nowait(neighbour)
-                # except Full:
-                #     continue
+                neighbour.set_metrics(g=g, heuristic=Rule._heuristics)
+                # neighbour.g = g
+                # neighbour.f = neighbour.g + Rule._heuristics(neighbour)
                 _open.put_nowait(neighbour)
-                is_g_better = True
-            # else:
-            #     is_g_better = g < neighbour.g
-
             elif g <= neighbour.g:
-
                 i = _open.queue.index(neighbour)
                 neighbour = _open.queue[i]
-
                 neighbour.parent = min_state
-                neighbour.g = g
-                neighbour.f = neighbour.g + Rule._heuristics(neighbour)
-
-            # if is_g_better:
-            #     neighbour.parent = min_state
-            #     neighbour.g = g
+                neighbour.set_metrics(g=g, heuristic=Rule._heuristics)
+                # neighbour.g = g
+                # neighbour.f = neighbour.g + Rule._heuristics(neighbour)
