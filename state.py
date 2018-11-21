@@ -15,6 +15,8 @@ TERMINAL_STATES = {
     3: np.array([[1, 2, 3], [4, 5, 6], [7, 8, 0]]),
     4: np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 0]])
 }
+from typing import Deque
+from queue import PriorityQueue
 
 
 class NPuzzlesMap:
@@ -70,29 +72,27 @@ class NPuzzlesMap:
 
 class State:
 
-    # terminal_map = np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
-    # terminal_map = np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]])
     terminal_map = None
 
-    def __init__(self, data: np.ndarray, parent=None, ):
+    def __init__(self, data: np.ndarray, parent=None, heuristic: callable=None):
         if not isinstance(data, np.ndarray) and data.size < 9:
             raise State.BadMapError()
         self._map = data.astype(int)
         self.flat_map = self._map.flatten()
         self.parent = parent
+        # TODO: Check it
         self.g = parent.g + 1 if parent else 0
-        self.f = None
         # TODO: Make better way
         if self.terminal_map is None:
-            # dimension, _ = self._map.shape
-            # terminal_flat_array = np.append(np.arange(1, dimension ** 2), 0)
-            # self.terminal_map = np.reshape(terminal_flat_array, self._map.shape)
-            # self.terminal_map = np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]])
             dimension, _ = self._map.shape
             self.terminal_map = TERMINAL_STATES.get(dimension)
             # self.terminal_map = np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]])
 
         self.empty_puzzle_coord = self.empty_element_coordinates(self._map)
+        if heuristic:
+            self.f = g + heuristic(self)
+        else:
+            self.f = None
         self.hash = sha1(self._map).hexdigest()
 
         # TODO: FLAG is PARENt WAS CHANGED
@@ -114,6 +114,12 @@ class State:
 
     def __repr__(self):
         return self.__str__()
+
+    def __lt__(self, other):
+        return self.f < other.f
+
+    def __le__(self, other):
+        return self.f <= other.f
 
     class UnknownInstanceError(Exception):
         def __init__(self, message='Unknown class instance', error=None):
@@ -146,13 +152,10 @@ class State:
             if elem == 0:
                 return indx_pair
 
-    def __lt__(self, other):
-        return self.f < other.f
-
 
 # TODO: Do we need Dequee?
-class TState(Deque):
-# class TState(List):
+# class TState(Deque):
+class TState(PriorityQueue):
 
     def __init__(self, *args, **kwargs):
         self.appends_amount = 0
@@ -189,6 +192,61 @@ class TState(Deque):
         while state:
             yield state
             state = state.parent
+
+    # def __contains__(self, item: State) -> bool:
+    #     matches = (True for state in self if item == state)
+    #     return next(matches, False)
+
+    def __contains__(self, item: State) -> bool:
+        matches = (True for state in self.queue if item == state)
+        return next(matches, False)
+
+    def __str__(self):
+        # TODO: Change it
+        res = ''
+        for elem in self:
+            res += str(elem) + '\n\n'
+        return res
+
+
+class TStateDeque(Deque):
+# class TStateDeque(PriorityQueue):
+
+    def __init__(self, *args, **kwargs):
+        self.appends_amount = 0
+        super().__init__(*args, **kwargs)
+
+    @property
+    def time_complexity(self):
+        return self.appends_amount
+
+    def append(self, item):
+        self.appends_amount += 1
+        return super().append(item)
+
+    def find_min_state(self, heuristic: callable) -> State:
+        min_state = self[0]
+        if not min_state.f:
+            min_state.f = min_state.g + heuristic(min_state)
+
+        for elem in self:
+            if not elem.f:
+                elem.f = elem.g + heuristic(elem)
+
+            if elem.f < min_state.f:
+                min_state = elem
+                min_state.f = elem.f
+        return min_state
+
+    @staticmethod
+    def reverse_to_head(state: State) -> iter:
+        while state:
+            yield state
+            state = state.parent
+
+    # def __contains__(self, item: State) -> bool:
+    #     matches = (True for state in self if item == state)
+    #     return next(matches, False)
 
     def __contains__(self, item: State) -> bool:
         matches = (True for state in self if item == state)
@@ -316,56 +374,55 @@ if __name__ == '__main__':
     heuristics_name = sys.argv[1].lower()
     Rule.choose_heuristics(heuristics_name)
 
-    # npazzle = NPuzzlesMap.from_file('4_4_map.txt')
+    # npazzle = NPuzzlesMap.from_file('4_4_map_test.txt')
+    npazzle = NPuzzlesMap.from_file('4.txt')
     # npazzle = NPuzzlesMap.from_file('3_s.txt')
     # npazzle = NPuzzlesMap.from_file('4_s.txt')
     # npazzle = NPuzzlesMap.from_file('4_4_map_o.txt')
     # npazzle = NPuzzlesMap.from_file('a.txt')
 
     # npazzle = NPuzzlesMap.from_file('3_new.txt')
-    npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
+    # npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
     # npazzle = NPuzzlesMap.from_file('3_3_map.txt')
 
     initial_state = npazzle.initial_state
+    initial_state.f = initial_state.g + Rule._heuristics(initial_state)
+
     terminal_state = npazzle.terminal_state
 
-    print('INITIAL')
-    print(initial_state)
-    print('TERMINAL')
-    print(terminal_state)
-
     _open = TState()
-    _close = TState()
-    _open.append(initial_state)
+    _close = TStateDeque()
+    # _open.append(initial_state)
+    _open.put(initial_state)
 
     # TODO: Check for validity. It's only assumption
-    size_comlexity = get_size_comlexity(_open, _close)
+    # size_comlexity = get_size_comlexity(_open, _close)
 
     while _open:
-        min_state = _open.find_min_state(Rule._heuristics)
-
-        # min_state = _open.popleft()
+        # min_state = _open.find_min_state(Rule._heuristics)
+        min_state = _open.get()
 
         if min_state == terminal_state:
-            solution = TState(elem for elem in _open.reverse_to_head(min_state))
+            solution = TStateDeque(elem for elem in _close.reverse_to_head(min_state))
             solution.reverse()  # now it is solution
             moves_number = len(solution)
             end_time = time.time()
             delta = end_time - start_time
             print('seconds: ', delta)
-            print(f'size complexity: {size_comlexity}')
-            print(f'time complexity: {_open.time_complexity}')
-            print(f'Moves: {moves_number}')
-            print(end_time - start_time)
+            # print(f'size complexity: {size_comlexity}')
+            # print(f'time complexity: {_open.time_complexity}')
+            # print(f'Moves: {moves_number}')
+            # print(globals().keys())
             exit(str(solution))
-        _open.remove(min_state)
+
+        # _open.remove(min_state)
         _close.append(min_state)
 
         neighbours = Rule.neignbours(min_state)
 
-        tmp_size = get_size_comlexity(_open, _close, *neighbours)
-        if size_comlexity < tmp_size:
-            size_comlexity = tmp_size
+        # tmp_size = get_size_comlexity(_open, _close, *neighbours)
+        # if size_comlexity < tmp_size:
+        #     size_comlexity = tmp_size
 
         for neighbour in neighbours:
             g = min_state.g + Rule.distance(min_state, neighbour)
@@ -375,27 +432,23 @@ if __name__ == '__main__':
             is_g_better = False
 
             if neighbour not in _open:
-
-                neighbour.f = neighbour.g + Rule._heuristics(neighbour)
-
-                # if not _open or neighbour < _open[0]:
-                #     _open.appendleft(neighbour)
-                # elif _open[-1] < neighbour:
-                #     _open.append(neighbour)
-                # else:
-                #     tmp_min, i = _open.find_min_state(Rule._heuristics, test=True)
-                #     if neighbour < tmp_min:
-                #         _open.insert(i, neighbour)
-                #     else:
-                #         _open.insert(i + 1, neighbour)
-                _open.append(neighbour)
-                is_g_better = True
-            else:
-                i = _open.index(neighbour)
-                neighbour = _open[i]
-                is_g_better = g < neighbour.g
-
-            if is_g_better:
                 neighbour.parent = min_state
                 neighbour.g = g
                 neighbour.f = neighbour.g + Rule._heuristics(neighbour)
+                _open.put(neighbour)
+                # _open.append(neighbour)
+                is_g_better = True
+            # else:
+            #     is_g_better = g < neighbour.g
+            elif g < neighbour.g:
+
+                i = _open.queue.index(neighbour)
+                neighbour = _open.queue[i]
+
+                neighbour.parent = min_state
+                neighbour.g = g
+                neighbour.f = neighbour.g + Rule._heuristics(neighbour)
+
+            # if is_g_better:
+            #     neighbour.parent = min_state
+            #     neighbour.g = g
