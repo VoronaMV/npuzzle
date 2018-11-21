@@ -7,7 +7,7 @@ import numpy as np
 from generator import generate_puzzle
 from hashlib import sha1
 from typing import Deque
-from queue import PriorityQueue
+from queue import PriorityQueue, Full
 
 
 TERMINAL_STATES = {
@@ -152,6 +152,12 @@ class State:
     def __le__(self, other):
         return self.f <= other.f
 
+    def __gt__(self, other):
+        return self.f > other.f
+
+    def __ge__(self, other):
+        return self.f >= other.f
+
     class UnknownInstanceError(Exception):
         def __init__(self, message='Unknown class instance', error=None):
             super().__init__(message)
@@ -196,6 +202,18 @@ class TState(PriorityQueue):
         for elem in self.queue:
             res += str(elem) + '\n\n'
         return res
+
+    def put_nowait(self, item):
+        if self.maxsize and self.maxsize == self.qsize():
+            self.pop_max()
+        return super().put_nowait(item)
+
+    def pop_max(self):
+        max_element = max(self.queue)
+        if not max_element:
+            return
+        max_index = self.queue.index(max_element)
+        return self.queue.pop(max_index)
 
 
 class TStateDeque(Deque):
@@ -390,13 +408,13 @@ Default value is M''')
 
     terminal_state = npazzle.terminal_state
 
-    _open = TState()
+    _open = TState(maxsize=50) # 50 was good for 4*4 3 на 3 тоже)
     _close = TStateDeque()
-    _open.put(initial_state)
+    _open.put_nowait(initial_state)
     print(initial_state)
     print('solavble?', is_solvable(initial_state._map, dimension=initial_state._map.shape[1]))
 
-    while _open:
+    while not _open.empty():
         min_state = _open.get()
 
         if min_state == terminal_state:
@@ -407,7 +425,7 @@ Default value is M''')
             delta = end_time - start_time
             print('seconds: ', delta)
             print('open', _open.qsize())
-            # print(f'Moves: {moves_number}')
+            print(f'Moves: {moves_number}')
             # exit(str(solution))
             exit()
 
@@ -427,7 +445,11 @@ Default value is M''')
                 neighbour.parent = min_state
                 neighbour.g = g
                 neighbour.f = neighbour.g + Rule._heuristics(neighbour)
-                _open.put(neighbour)
+                # try:
+                #     _open.put_nowait(neighbour)
+                # except Full:
+                #     continue
+                _open.put_nowait(neighbour)
                 is_g_better = True
             # else:
             #     is_g_better = g < neighbour.g
