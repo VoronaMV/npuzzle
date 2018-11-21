@@ -4,10 +4,10 @@ import sys
 import math
 import time
 import numpy as np
-from typing import Deque, List
-from hashlib import sha1, md5
+from hashlib import sha1
+from typing import Deque
 from queue import PriorityQueue
-import heapq
+
 
 TERMINAL_STATES = {
     # 3: np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]]),
@@ -15,8 +15,6 @@ TERMINAL_STATES = {
     3: np.array([[1, 2, 3], [4, 5, 6], [7, 8, 0]]),
     4: np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 0]])
 }
-from typing import Deque
-from queue import PriorityQueue
 
 
 class NPuzzlesMap:
@@ -374,9 +372,9 @@ if __name__ == '__main__':
     heuristics_name = sys.argv[1].lower()
     Rule.choose_heuristics(heuristics_name)
 
-    # npazzle = NPuzzlesMap.from_file('4_4_map_test.txt')
-    npazzle = NPuzzlesMap.from_file('4.txt')
-    # npazzle = NPuzzlesMap.from_file('3_s.txt')
+    # npazzle = NPuzzlesMap.from_file('4_new.txt')
+    # npazzle = NPuzzlesMap.from_file('4.txt')
+    npazzle = NPuzzlesMap.from_file('3_s.txt')
     # npazzle = NPuzzlesMap.from_file('4_s.txt')
     # npazzle = NPuzzlesMap.from_file('4_4_map_o.txt')
     # npazzle = NPuzzlesMap.from_file('a.txt')
@@ -409,6 +407,7 @@ if __name__ == '__main__':
             end_time = time.time()
             delta = end_time - start_time
             print('seconds: ', delta)
+            print('open', _open.qsize())
             # print(f'size complexity: {size_comlexity}')
             # print(f'time complexity: {_open.time_complexity}')
             # print(f'Moves: {moves_number}')
@@ -440,14 +439,19 @@ if __name__ == '__main__':
                 is_g_better = True
             # else:
             #     is_g_better = g < neighbour.g
-            elif g < neighbour.g:
 
-                i = _open.queue.index(neighbour)
-                neighbour = _open.queue[i]
 
-                neighbour.parent = min_state
-                neighbour.g = g
-                neighbour.f = neighbour.g + Rule._heuristics(neighbour)
+            # elif g < neighbour.g:
+            #
+            #     i = _open.queue.index(neighbour)
+            #     neighbour = _open.queue[i]
+            #
+            #     neighbour.parent = min_state
+            #     neighbour.g = g
+            #     neighbour.f = neighbour.g + Rule._heuristics(neighbour)
+
+
+
 
             # if is_g_better:
             #     neighbour.parent = min_state
