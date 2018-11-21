@@ -12,9 +12,9 @@ from queue import PriorityQueue
 
 TERMINAL_STATES = {
     # 3: np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]]),
-    # 4: np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]]),
+    4: np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]]),
     3: np.array([[1, 2, 3], [4, 5, 6], [7, 8, 0]]),
-    4: np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 0]])
+    # 4: np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 0]])
 }
 
 
@@ -399,7 +399,9 @@ Default value is M''')
 
     terminal_state = npazzle.terminal_state
 
-    _open = TState(maxsize=50) # 50 was good for 4*4 3 на 3 тоже)
+    # The bigger size = the shorter way, but longer time
+    # 8 was very fast
+    _open = TState(maxsize=8) # 50 was good for 4*4 3 на 3 тоже) Map 4*4 inversion=45 the best was max_size=15 (inv number=6 - time=0.4 sec)
     _close = TStateDeque()
     _open.put_nowait(initial_state)
     print(initial_state)
@@ -414,6 +416,7 @@ Default value is M''')
             moves_number = len(solution)
             end_time = time.time()
             delta = end_time - start_time
+            print(str(solution))
             print('seconds: ', delta)
             print('open', _open.qsize())
             print(f'Moves: {moves_number}')
