@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import argparse
 import random
 
 
@@ -70,20 +69,7 @@ def stringify_map(map, map_size):
     return stringified_map
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("size", type=int, help="Size of the puzzle's side. Must be >3.")
-    parser.add_argument("-s", "--solvable", action="store_true", default=False,
-                        help="Forces generation of a solvable puzzle. Overrides -u.")
-    parser.add_argument("-u", "--unsolvable", action="store_true", default=False,
-                        help="Forces generation of an unsolvable puzzle")
-    parser.add_argument("-i", "--iterations", type=int, default=10000, help="Number of passes")
-
-    args = parser.parse_args()
-
-    random.seed()
-
+def generate_puzzle(args):
     if args.solvable and args.unsolvable:
         print("Can't be both solvable AND unsolvable, dummy !")
         exit(1)
@@ -105,7 +91,8 @@ if __name__ == "__main__":
 
     is_solvable_str = "solvable" if is_solvable else "unsolvable"
     print(f"# This puzzle is {is_solvable_str}")
-    print(f'{map_size}')
+    # print(f'{map_size}')
 
-    stringified_map = stringify_map(puzzle, map_size)
+    stringified_map = str(map_size) + '\n' + stringify_map(puzzle, map_size)
     print(stringified_map, end='')
+    return stringified_map

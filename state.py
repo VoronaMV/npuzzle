@@ -3,9 +3,12 @@ import re
 import sys
 import math
 import time
+import argparse
 import numpy as np
 from typing import Deque, List
 from hashlib import sha1, md5
+from generator import generate_puzzle
+
 from queue import PriorityQueue
 import heapq
 
@@ -53,9 +56,30 @@ class NPuzzlesMap:
                     start_map.append(row)
         return np.array(start_map)
 
+    @staticmethod
+    def __map_from_string(string_map: str) -> np.ndarray:
+        dimension = None
+        start_map = list()
+        lines = string_map.split('\n')
+        lines.pop(-1)
+        for line in lines:
+            line.strip()
+            if dimension is None and re.fullmatch(r'\d+', line):
+                dimension = int(line)
+            elif dimension is not None:
+                row = re.findall(r'\d+', line)
+                row = [int(digit) for digit in row[:dimension]]
+                start_map.append(row)
+        return np.array(start_map)
+
     @classmethod
     def from_file(cls, filename):
         initial_map = cls.__map_from_file(filename)
+        return cls(initial_map.shape, initial_map)
+
+    @classmethod
+    def from_string(cls, string_map):
+        initial_map = cls.__map_from_string(string_map)
         return cls(initial_map.shape, initial_map)
 
     def __str__(self):
@@ -244,10 +268,6 @@ class TStateDeque(Deque):
             yield state
             state = state.parent
 
-    # def __contains__(self, item: State) -> bool:
-    #     matches = (True for state in self if item == state)
-    #     return next(matches, False)
-
     def __contains__(self, item: State) -> bool:
         matches = (True for state in self if item == state)
         return next(matches, False)
@@ -262,7 +282,7 @@ class TStateDeque(Deque):
 
 class Rule:
 
-    HEURISTICS_CHOICES = ('simple', 'manhattan', 'diagonal', 'euclidean',)
+    HEURISTICS_CHOICES = {"H": "simple", "M": "manhattan", "D": "diagonal", "E": "euclidean", "ML": "manhattan_linear"}
     _heuristics = None
 
     class WrongHeuristicsError(Exception):
@@ -278,8 +298,8 @@ class Rule:
         if heuristic_name not in cls.HEURISTICS_CHOICES:
             raise cls.WrongHeuristicsError()
         prefix = 'heuristic_'
-        default_heuristic = prefix + cls.HEURISTICS_CHOICES[0]
-        cls._heuristics = cls.__dict__.get(prefix + heuristic_name, cls.__dict__[default_heuristic])
+        default_heuristic = prefix + cls.HEURISTICS_CHOICES.get(heuristic_name)
+        cls._heuristics = cls.__dict__.get(default_heuristic, cls.__dict__.get(default_heuristic))
 
     @staticmethod
     def heuristic_simple(node: State) -> int:
@@ -370,20 +390,37 @@ def get_size_comlexity(_open, _close, *args):
 
 
 if __name__ == '__main__':
+    generator = argparse.ArgumentParser(add_help=False, formatter_class=argparse.RawTextHelpFormatter)
+    generator.add_argument('-G', '--generate', type=int, help="Size of the puzzle's side. Must be >= 3.", default=3,
+                           dest='size')
+    generator.add_argument("-s", "--solvable", action="store_true", default=False,
+                           help="Forces generation of a solvable puzzle. Overrides -u.")
+    generator.add_argument("-u", "--unsolvable", action="store_true", default=False,
+                           help="Forces generation of an unsolvable puzzle")
+    generator.add_argument("-i", "--iterations", type=int, default=10000, help="Number of passes")
+
+    parser = argparse.ArgumentParser(parents=[generator], formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('--file', default='', type=str, help='Enter a path to file with puzzle',)
+    parser.add_argument('-H', '--heuristics', choices=['M', 'ML', 'H', 'E', 'D'], default='M',
+                        dest='heuristics',
+                        help='''Choose one of heuristics to solve the puzzle.
+M - for Manhattan distance.
+ML - for Manhattan distance + Linear conflict.
+H - for Hemming distance.
+E - for Euclidean distance.
+D - for Diagonal distance.
+Default value is M''')
+
+    args = parser.parse_args()
+    print(args)
+
     start_time = time.time()
-    heuristics_name = sys.argv[1].lower()
-    Rule.choose_heuristics(heuristics_name)
-
-    # npazzle = NPuzzlesMap.from_file('4_4_map_test.txt')
-    npazzle = NPuzzlesMap.from_file('4.txt')
-    # npazzle = NPuzzlesMap.from_file('3_s.txt')
-    # npazzle = NPuzzlesMap.from_file('4_s.txt')
-    # npazzle = NPuzzlesMap.from_file('4_4_map_o.txt')
-    # npazzle = NPuzzlesMap.from_file('a.txt')
-
-    # npazzle = NPuzzlesMap.from_file('3_new.txt')
-    # npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
-    # npazzle = NPuzzlesMap.from_file('3_3_map.txt')
+    Rule.choose_heuristics(args.heuristics)
+    if args.file:
+        npazzle = NPuzzlesMap.from_file(filename=args.file)
+    else:
+        string_puzzle = generate_puzzle(args)
+        npazzle = NPuzzlesMap.from_string(string_puzzle)
 
     initial_state = npazzle.initial_state
     initial_state.f = initial_state.g + Rule._heuristics(initial_state)
