@@ -1,9 +1,10 @@
 import os
 import re
-import sys
 import math
 import time
+import argparse
 import numpy as np
+from generator import generate_puzzle
 from hashlib import sha1
 from typing import Deque
 from queue import PriorityQueue
@@ -17,6 +18,29 @@ TERMINAL_STATES = {
 }
 
 
+def is_solvable(_map: np.ndarray, dimension=4) -> bool:
+    flat_map = _map.flatten()
+    inversions = 0
+    for i, puzzle in enumerate(flat_map):
+        if puzzle == 0:
+            continue
+        for elem in flat_map[:i]:
+            if elem > puzzle:
+                inversions += 1
+    print('inversions number=', inversions)
+    is_inversions_even = True if inversions % 2 == 0 else False
+
+    if dimension % 2 != 0:
+        return is_inversions_even
+    if 0 in _map[::-2]:
+        # inversions even
+        return is_inversions_even
+    elif 0 in _map[::2]:
+        # inversions odd
+        return not is_inversions_even
+    return False
+
+
 class NPuzzlesMap:
 
     MIN_SHAPE = (3, 3)
@@ -27,11 +51,7 @@ class NPuzzlesMap:
         self.initial_map = initial_map
         self.initial_state = State(self.initial_map)
         dimension, _ = shape
-        terminal_flat_array = np.append(np.arange(1, dimension**2), 0)
-        # terminal_array = np.reshape(terminal_flat_array, shape)
-        # TODO: BE careful
         terminal_array = TERMINAL_STATES.get(dimension)
-
         self.terminal_state = State(terminal_array)
 
     @staticmethod
@@ -51,9 +71,30 @@ class NPuzzlesMap:
                     start_map.append(row)
         return np.array(start_map)
 
+    @staticmethod
+    def __map_from_string(string_map: str) -> np.ndarray:
+        dimension = None
+        start_map = list()
+        lines = string_map.split('\n')
+        lines.pop(-1)
+        for line in lines:
+            line.strip()
+            if dimension is None and re.fullmatch(r'\d+', line):
+                dimension = int(line)
+            elif dimension is not None:
+                row = re.findall(r'\d+', line)
+                row = [int(digit) for digit in row[:dimension]]
+                start_map.append(row)
+        return np.array(start_map)
+
     @classmethod
     def from_file(cls, filename):
         initial_map = cls.__map_from_file(filename)
+        return cls(initial_map.shape, initial_map)
+
+    @classmethod
+    def from_string(cls, string_map):
+        initial_map = cls.__map_from_string(string_map)
         return cls(initial_map.shape, initial_map)
 
     def __str__(self):
@@ -84,7 +125,6 @@ class State:
         if self.terminal_map is None:
             dimension, _ = self._map.shape
             self.terminal_map = TERMINAL_STATES.get(dimension)
-            # self.terminal_map = np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]])
 
         self.empty_puzzle_coord = self.empty_element_coordinates(self._map)
         if heuristic:
@@ -151,49 +191,7 @@ class State:
                 return indx_pair
 
 
-# TODO: Do we need Dequee?
-# class TState(Deque):
 class TState(PriorityQueue):
-
-    def __init__(self, *args, **kwargs):
-        self.appends_amount = 0
-        super().__init__(*args, **kwargs)
-
-    @property
-    def time_complexity(self):
-        return self.appends_amount
-
-    def append(self, item):
-        self.appends_amount += 1
-        return super().append(item)
-
-    def find_min_state(self, heuristic: callable, test=False):# -> State:
-        min_state = self[0]
-        if not min_state.f:
-            min_state.f = min_state.g + heuristic(min_state)
-
-        indx = 0
-        for i, elem in enumerate(self):
-            if not elem.f:# or elem.changed is True:
-                elem.f = elem.g + heuristic(elem)
-
-            if elem.f <= min_state.f:
-                indx = i
-                min_state = elem
-                min_state.f = elem.f
-        if test:
-            return min_state, indx
-        return min_state
-
-    @staticmethod
-    def reverse_to_head(state: State) -> iter:
-        while state:
-            yield state
-            state = state.parent
-
-    # def __contains__(self, item: State) -> bool:
-    #     matches = (True for state in self if item == state)
-    #     return next(matches, False)
 
     def __contains__(self, item: State) -> bool:
         matches = (True for state in self.queue if item == state)
@@ -202,7 +200,7 @@ class TState(PriorityQueue):
     def __str__(self):
         # TODO: Change it
         res = ''
-        for elem in self:
+        for elem in self.queue:
             res += str(elem) + '\n\n'
         return res
 
@@ -242,10 +240,6 @@ class TStateDeque(Deque):
             yield state
             state = state.parent
 
-    # def __contains__(self, item: State) -> bool:
-    #     matches = (True for state in self if item == state)
-    #     return next(matches, False)
-
     def __contains__(self, item: State) -> bool:
         matches = (True for state in self if item == state)
         return next(matches, False)
@@ -260,7 +254,7 @@ class TStateDeque(Deque):
 
 class Rule:
 
-    HEURISTICS_CHOICES = ('simple', 'manhattan', 'diagonal', 'euclidean',)
+    HEURISTICS_CHOICES = {"H": "simple", "M": "manhattan", "D": "diagonal", "E": "euclidean", "ML": "manhattan_linear"}
     _heuristics = None
 
     class WrongHeuristicsError(Exception):
@@ -276,8 +270,8 @@ class Rule:
         if heuristic_name not in cls.HEURISTICS_CHOICES:
             raise cls.WrongHeuristicsError()
         prefix = 'heuristic_'
-        default_heuristic = prefix + cls.HEURISTICS_CHOICES[0]
-        cls._heuristics = cls.__dict__.get(prefix + heuristic_name, cls.__dict__[default_heuristic])
+        default_heuristic = prefix + cls.HEURISTICS_CHOICES.get(heuristic_name)
+        cls._heuristics = cls.__dict__.get(default_heuristic, cls.__dict__.get(default_heuristic))
 
     @staticmethod
     def heuristic_simple(node: State) -> int:
@@ -368,20 +362,36 @@ def get_size_comlexity(_open, _close, *args):
 
 
 if __name__ == '__main__':
+    generator = argparse.ArgumentParser(add_help=False, formatter_class=argparse.RawTextHelpFormatter)
+    generator.add_argument('-G', '--generate', type=int, help="Size of the puzzle's side. Must be >= 3.", default=3,
+                           dest='size')
+    generator.add_argument("-s", "--solvable", action="store_true", default=False,
+                           help="Forces generation of a solvable puzzle. Overrides -u.")
+    generator.add_argument("-u", "--unsolvable", action="store_true", default=False,
+                           help="Forces generation of an unsolvable puzzle")
+    generator.add_argument("-i", "--iterations", type=int, default=10000, help="Number of passes")
+
+    parser = argparse.ArgumentParser(parents=[generator], formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('--file', default='', type=str, help='Enter a path to file with puzzle',)
+    parser.add_argument('-H', '--heuristics', choices=['M', 'ML', 'H', 'E', 'D'], default='M',
+                        dest='heuristics',
+                        help='''Choose one of heuristics to solve the puzzle.
+M - for Manhattan distance.
+ML - for Manhattan distance + Linear conflict.
+H - for Hemming distance.
+E - for Euclidean distance.
+D - for Diagonal distance.
+Default value is M''')
+
+    args = parser.parse_args()
+
     start_time = time.time()
-    heuristics_name = sys.argv[1].lower()
-    Rule.choose_heuristics(heuristics_name)
-
-    # npazzle = NPuzzlesMap.from_file('4_new.txt')
-    # npazzle = NPuzzlesMap.from_file('4.txt')
-    npazzle = NPuzzlesMap.from_file('3_s.txt')
-    # npazzle = NPuzzlesMap.from_file('4_s.txt')
-    # npazzle = NPuzzlesMap.from_file('4_4_map_o.txt')
-    # npazzle = NPuzzlesMap.from_file('a.txt')
-
-    # npazzle = NPuzzlesMap.from_file('3_new.txt')
-    # npazzle = NPuzzlesMap.from_file('3_3_map_test.txt')
-    # npazzle = NPuzzlesMap.from_file('3_3_map.txt')
+    Rule.choose_heuristics(args.heuristics)
+    if args.file:
+        npazzle = NPuzzlesMap.from_file(filename=args.file)
+    else:
+        string_puzzle = generate_puzzle(args)
+        npazzle = NPuzzlesMap.from_string(string_puzzle)
 
     initial_state = npazzle.initial_state
     initial_state.f = initial_state.g + Rule._heuristics(initial_state)
@@ -390,14 +400,11 @@ if __name__ == '__main__':
 
     _open = TState()
     _close = TStateDeque()
-    # _open.append(initial_state)
     _open.put(initial_state)
-
-    # TODO: Check for validity. It's only assumption
-    # size_comlexity = get_size_comlexity(_open, _close)
+    print(initial_state)
+    print('solavble?', is_solvable(initial_state._map, dimension=initial_state._map.shape[1]))
 
     while _open:
-        # min_state = _open.find_min_state(Rule._heuristics)
         min_state = _open.get()
 
         if min_state == terminal_state:
@@ -408,26 +415,19 @@ if __name__ == '__main__':
             delta = end_time - start_time
             print('seconds: ', delta)
             print('open', _open.qsize())
-            # print(f'size complexity: {size_comlexity}')
-            # print(f'time complexity: {_open.time_complexity}')
             # print(f'Moves: {moves_number}')
-            # print(globals().keys())
             exit(str(solution))
 
-        # _open.remove(min_state)
         _close.append(min_state)
 
         neighbours = Rule.neignbours(min_state)
 
-        # tmp_size = get_size_comlexity(_open, _close, *neighbours)
-        # if size_comlexity < tmp_size:
-        #     size_comlexity = tmp_size
-
         for neighbour in neighbours:
-            g = min_state.g + Rule.distance(min_state, neighbour)
-
             if neighbour in _close:
                 continue
+
+            g = min_state.g + Rule.distance(min_state, neighbour)
+
             is_g_better = False
 
             if neighbour not in _open:
@@ -440,18 +440,14 @@ if __name__ == '__main__':
             # else:
             #     is_g_better = g < neighbour.g
 
+            elif g < neighbour.g:
 
-            # elif g < neighbour.g:
-            #
-            #     i = _open.queue.index(neighbour)
-            #     neighbour = _open.queue[i]
-            #
-            #     neighbour.parent = min_state
-            #     neighbour.g = g
-            #     neighbour.f = neighbour.g + Rule._heuristics(neighbour)
+                i = _open.queue.index(neighbour)
+                neighbour = _open.queue[i]
 
-
-
+                neighbour.parent = min_state
+                neighbour.g = g
+                neighbour.f = neighbour.g + Rule._heuristics(neighbour)
 
             # if is_g_better:
             #     neighbour.parent = min_state
