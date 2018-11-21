@@ -18,6 +18,10 @@ TERMINAL_STATES = {
 }
 
 
+def get_size_comlexity(_open, _close, *args):
+    return len(_open) + len(_close) + len(args)
+
+
 def is_solvable(_map: np.ndarray, dimension=4) -> bool:
     flat_map = _map.flatten()
     inversions = 0
@@ -133,17 +137,6 @@ class State:
             self.f = None
         self.hash = sha1(self._map).hexdigest()
 
-        # TODO: FLAG is PARENt WAS CHANGED
-
-    # def __eq__(self, other) -> bool:
-    #     if not isinstance(other, self.__class__):
-    #         raise self.UnknownInstanceError()
-    #     return np.array_equal(self._map, other._map)
-
-    def set_f(self, new_f):
-        self.f = new_f
-        return self.f
-
     def __eq__(self, other):
         return self.hash == other.hash
 
@@ -206,7 +199,6 @@ class TState(PriorityQueue):
 
 
 class TStateDeque(Deque):
-# class TStateDeque(PriorityQueue):
 
     def __init__(self, *args, **kwargs):
         self.appends_amount = 0
@@ -254,7 +246,13 @@ class TStateDeque(Deque):
 
 class Rule:
 
-    HEURISTICS_CHOICES = {"H": "simple", "M": "manhattan", "D": "diagonal", "E": "euclidean", "ML": "manhattan_linear"}
+    HEURISTICS_CHOICES = {
+        "H": "simple",
+        "M": "manhattan",
+        "D": "diagonal",
+        "E": "euclidean",
+        "ML": "manhattan_linear" # TODO: Implement it
+    }
     _heuristics = None
 
     class WrongHeuristicsError(Exception):
@@ -323,29 +321,27 @@ class Rule:
                     break
         return total_sum
 
-
     @staticmethod
-    def neignbours(node: State) -> list:
+    def neighbours(node: State) -> list:
         """
         Should return set of app states that can be neighbours to current
         map state (shift 0 right/left/up/down)
         """
-        neighbours = list()
+        _neighbours = list()
         directions = ['up', 'down', 'right', 'left']
         for direction in directions:
             coordinates = node.shift_empty_puzzle(direction)
             try:
                 if coordinates[0] < 0 or coordinates[1] < 0:
                     continue
-                # TODO: switch elements
                 new_map = node._map.copy()
                 non_empty_element = node._map[coordinates]
                 new_map[node.empty_puzzle_coord] = non_empty_element
                 new_map[coordinates] = 0
-                neighbours.append(State(new_map, parent=node))
+                _neighbours.append(State(new_map, parent=node))
             except:
                 continue
-        return neighbours
+        return _neighbours
 
     @staticmethod
     def distance(first: State, second: State) -> float:
@@ -355,10 +351,6 @@ class Rule:
         """
         # raise NotImplementedError()
         return 1.0
-
-
-def get_size_comlexity(_open, _close, *args):
-    return len(_open) + len(_close) + len(args)
 
 
 if __name__ == '__main__':
@@ -416,11 +408,12 @@ Default value is M''')
             print('seconds: ', delta)
             print('open', _open.qsize())
             # print(f'Moves: {moves_number}')
-            exit(str(solution))
+            # exit(str(solution))
+            exit()
 
         _close.append(min_state)
 
-        neighbours = Rule.neignbours(min_state)
+        neighbours = Rule.neighbours(min_state)
 
         for neighbour in neighbours:
             if neighbour in _close:
@@ -435,12 +428,11 @@ Default value is M''')
                 neighbour.g = g
                 neighbour.f = neighbour.g + Rule._heuristics(neighbour)
                 _open.put(neighbour)
-                # _open.append(neighbour)
                 is_g_better = True
             # else:
             #     is_g_better = g < neighbour.g
 
-            elif g < neighbour.g:
+            elif g <= neighbour.g:
 
                 i = _open.queue.index(neighbour)
                 neighbour = _open.queue[i]
