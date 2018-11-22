@@ -1,6 +1,6 @@
 import numpy as np
 from hashlib import sha1
-from abc import ABCMeta, abstractmethod, abstractclassmethod, abstractstaticmethod
+from abc import ABCMeta, abstractmethod
 from queue import PriorityQueue
 from typing import Deque
 from utils import TERMINAL_STATES
@@ -34,6 +34,16 @@ class StateABC(metaclass=ABCMeta):
         for indx_pair, elem in np.ndenumerate(_map):
             if elem == 0:
                 return indx_pair
+
+    class UnknownInstanceError(Exception):
+        def __init__(self, message='Unknown class instance', error=None):
+            super().__init__(message)
+            self.error = error
+
+    class BadMapError(Exception):
+        def __init__(self, message='Bad map', error=None):
+            super().__init__(message)
+            self.error = error
 
     @abstractmethod
     def __eq__(self, other) -> bool:
@@ -71,16 +81,6 @@ class StateABC(metaclass=ABCMeta):
     def set_metrics(self, heuristic: callable, g: int=None) -> None:
         pass
 
-    class UnknownInstanceError(Exception):
-        def __init__(self, message='Unknown class instance', error=None):
-            super().__init__(message)
-            self.error = error
-
-    class BadMapError(Exception):
-        def __init__(self, message='Bad map', error=None):
-            super().__init__(message)
-            self.error = error
-
 
 class StatePQueueABC(PriorityQueue, metaclass=ABCMeta):
 
@@ -111,7 +111,8 @@ class StateDQueueABC(Deque, metaclass=ABCMeta):
     def time_complexity(self) -> int:
         pass
 
-    @abstractstaticmethod
+    @staticmethod
+    @abstractmethod
     def reverse_to_head(state: StateABC) -> iter:
         pass
 

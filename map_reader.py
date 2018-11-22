@@ -9,12 +9,15 @@ class NPuzzlesMap:
 
     MIN_SHAPE = (3, 3)
 
-    def __init__(self, shape: tuple, initial_map: np.ndarray):
+    def __init__(self, shape: tuple, initial_map: np.ndarray, notation='snail'):
         if shape < self.MIN_SHAPE:
             raise self.BadMapError()
         self.initial_map = initial_map
         self.initial_state = State(self.initial_map)
         dimension, _ = shape
+
+        # notation_dict = TERMINAL_STATES.get(notation)
+
         terminal_array = TERMINAL_STATES.get(dimension)
         self.terminal_state = State(terminal_array)
 

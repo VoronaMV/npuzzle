@@ -65,6 +65,7 @@ Default value is M''')
             print('seconds: ', delta)
             print('open', _open.qsize())
             print(f'Moves: {moves_number}')
+            solution.to_file('res.json')
             # exit(str(solution))
             exit()
 
