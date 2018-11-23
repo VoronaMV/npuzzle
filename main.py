@@ -4,7 +4,7 @@ from generator import generate_puzzle
 from rules import Rule
 from map_reader import NPuzzlesMap
 from queues import StatePQueue, StateDQueue
-from utils import is_solvable
+from utils import is_solvable, get_size_comlexity
 
 
 if __name__ == '__main__':
@@ -44,28 +44,34 @@ Default value is M''')
 
     terminal_state = npazzle.terminal_state
 
-    # The bigger size = the shorter way, but longer time
-    # 8 was very fast
-    _open = StatePQueue(maxsize=8) # 50 was good for 4*4 3 на 3 тоже) Map 4*4 inversion=45 the best was max_size=15 (inv number=6 - time=0.4 sec)
+    _open = StatePQueue(maxsize=8)
     _close = StateDQueue()
     _open.put_nowait(initial_state)
     print(initial_state)
     print('solavble?', is_solvable(initial_state._map, dimension=initial_state._map.shape[1]))
+
+    params = dict.fromkeys(['size_complexity', 'time_complexity', 'moves_amount'], 0)
+    params['size_complexity'] = get_size_comlexity(_open, _close)
 
     while not _open.empty():
         min_state = _open.get_nowait()
 
         if min_state == terminal_state:
             solution = StateDQueue(elem for elem in _close.reverse_to_head(min_state))
-            solution.reverse()  # now it is solution
-            moves_number = len(solution)
+            solution.reverse()
+            params['moves_amount'] = len(solution)
             end_time = time.time()
             delta = end_time - start_time
             print(str(solution))
+            print('time complexity=', _open.time_complexity)
+            print('size complexity=', params.get('size_complexity'))
             print('seconds: ', delta)
             print('open', _open.qsize())
-            print(f'Moves: {moves_number}')
-            solution.to_file('res.json')
+            print(f'Moves: {params.get("moves_amount")}')
+            try:
+                solution.to_file('res.json')
+            except:
+                pass
             # exit(str(solution))
             exit()
 
@@ -87,3 +93,5 @@ Default value is M''')
                 neighbour = _open.queue[i]
                 neighbour.parent = min_state
                 neighbour.set_metrics(g=g, heuristic=Rule.heuristics)
+
+        params['size_complexity'] = get_size_comlexity(_open, _close)

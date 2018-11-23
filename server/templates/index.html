@@ -15,191 +15,144 @@
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
     <style>
         html {
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-}
-
-*, *:before, *:after {
-  box-sizing: inherit;
-}
-
-body {
-    padding: 0;
-    margin: 0;
-}
-/* END RESET */
-
-html {
-    height: 100%;
-}
-
-body {
-    height: 100%;
-}
-
-.view-screen {
-    width: 100%;
-    height: 100%;
-    background-color: #222222;
-    border: 1px solid #444444;
-}
-
-/*.eight-puzzle {*/
-    /*margin: 0;*/
-    /*width: 272px; !* 270 + 4 (borders) *!*/
-    /*height: 272px; !* 270 + 4 (borders) *!*/
-    /*border: 2px solid #444444;*/
-    /*padding: 5px;*/
-    /*margin: 14px 0 0 14px;*/
-/*}*/
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        *, *:before, *:after {
+          box-sizing: inherit;
+        }
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        html {height: 100%;}
+        body {height: 100%;}
+        .view-screen {
+            width: 100%;
+            height: 100%;
+            background-color: #222222;
+            border: 1px solid #444444;
+        }
         {% if len == 3 %}
-.eight-puzzle {
-    margin: 0;
-    width: 272px; /* 270 + 4 (borders) */
-    height: 272px; /* 270 + 4 (borders) */
-    border: 2px solid #444444;
-    padding: 5px;
-    margin: 14px 0 0 14px;
-}
+            .eight-puzzle {
+                margin: 0;
+                width: 272px; /* 270 + 4 (borders) */
+                height: 272px; /* 270 + 4 (borders) */
+                border: 2px solid #444444;
+                padding: 5px;
+                margin: 14px 0 0 14px;
+            }
         {% else %}
-        .eight-puzzle {
-    margin: 0;
-    width: 372px; /* 270 + 4 (borders) */
-    height: 372px; /* 270 + 4 (borders) */
-    border: 2px solid #444444;
-    padding: 5px;
-    margin: 14px 0 0 14px;
-}
+            .eight-puzzle {
+            margin: 0;
+            width: 360px; /* 270 + 4 (borders) */
+            height: 360px; /* 270 + 4 (borders) */
+            border: 2px solid #444444;
+            padding: 5px;
+            margin: 14px 0 0 14px;
+            }
         {% endif %}
-    .eight-puzzle ul {
-        margin: 0;
-        padding: 0;
+        .eight-puzzle ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            font-size: 0;
+        }
+        .eight-puzzle li {
+            display: inline-block;
+            margin: 5px;
+            width: 76px;
+            height: 76px;
+            border: 2px solid #444444;
 
-        list-style: none;
-        font-size: 0;
-    }
-    .eight-puzzle li {
-        display: inline-block;
-        margin: 5px;
-        width: 76px;
-        height: 76px;
-        border: 2px solid #444444;
-
-        line-height: 76px;
-        font-size: 40px;
-        text-align: center;
-    }
+            line-height: 76px;
+            font-size: 40px;
+            text-align: center;
+        }
         .eight-puzzle li.incorrect {
             background-color: #333333;
             color: #ff0000;
         }
-
         .eight-puzzle li.correct {
             background-color: #333333;
             color: #00ff00;
         }
-
     </style>
 </head>
 <body>
-
   <div class="view-screen">
       <div>
           <button class="btn btn-info" href="/get_data"> Get data</button>
       </div>
-      <div class="eight-puzzle">
-          <!--<ul class="n-puzzle">-->
-              <!--{% for elem in state %}-->
-                <!--{% if elem == 0 %}-->
-                    <!--<li class="empty" data-tile="0">0</li>-->
-                <!--{% else %}-->
-                    <!--<li class="incorrect" data-tile="{{elem}}">{{elem}}</li>-->
-                <!--{% endif %}-->
-              <!--{% endfor %}-->
-
-          <!--</ul>-->
-      </div>
+      <div class="eight-puzzle"></div>
   </div>
-    <script>
+  <script>
+      window.onload = () => {
+          $('.btn').on('click', function () {
+              $.post('/get-data',
+                  function (response, status) {
+                      var moves = response.moves;
+                      var movesAmount = response.moves_amount;
+                      tiles = moves[0];
+                      if (tiles.length === 4) {
+                          $('.eight-puzzle').css({'height': 370, 'weight': 370});
+                      }
+                      renderTiles($('.eight-puzzle'));
+                      moves.forEach(function (item, i, arr) {
+                          setTimeout(function () {
+                              var zeroIndex = item.indexOf(0);
+                              shiftTile(zeroIndex, item.length);
+                          }, 200 * i);
+                      });
+                  }
+              );
+          });
 
-        window.onload = () => {
-            $('.btn').on('click', function () {
-               $.post('/get-data',
-                   function (response, status) {
-                       var moves = response.moves;
-                       var movesAmount = response.moves_amount;
-                       tiles = moves[0];
-                       if (tiles.length === 4) {
-                           $('.eight-puzzle').css({'height': 370, 'weight': 370});
-                       }
+          var tiles = [2, 3, 1, 4, 5, 6, 7, 8, 0];
+          var $target = undefined;
 
-                       renderTiles($('.eight-puzzle'));
-                       moves.forEach(function (item, i, arr) {
-                           setTimeout(function () {
-                               var zeroIndex = item.indexOf(0);
-                               shiftTile(zeroIndex, item.length);
-                           }, 300 * i);
-                       });
-                   }
-               );
-            });
-            var tiles = [2, 3, 1, 4, 5, 6, 7, 8, 0];
+          var renderTiles = function ($newTarget) {
+              $target = $newTarget || $target;
+              var $ul = $("<ul>", {"class": "n-puzzle"});
+              $(tiles).each(function (index) {
+                  var correct = index + 1 == this;
+                  var cssClass = this == 0 ? "empty" : (correct ? "correct" : "incorrect");
+                  var $li = $("<li>", {
+                      "class": cssClass,
+                      "data-tile": this,
+                  });
+                  $li.text(this);
+                  $li.click({index: index}, shiftTile);
+                  $ul.append($li);
+              });
+              $target.html($ul);
+          };
 
-            var $target = undefined;
-
-            var renderTiles = function ($newTarget) {
-                $target = $newTarget || $target;
-
-                var $ul = $("<ul>", {"class": "n-puzzle"});
-
-                $(tiles).each(function (index) {
-                    var correct = index + 1 == this;
-                    var cssClass = this == 0 ? "empty" : (correct ? "correct" : "incorrect");
-
-                    var $li = $("<li>", {
-                        "class": cssClass,
-                        "data-tile": this,
-                    });
-                    $li.text(this);
-                    $li.click({index: index}, shiftTile);
-                    $ul.append($li);
-                });
-
-                $target.html($ul);
-            };
-
-
-            var shiftTile = function (index, len) {
-                var _max = 3;
-                if (len === 4) {
-                    _max = 4;
-                }
-                // var index = event.data.index;
-                var targetIndex = -1;
-                if (index - 1 >= 0 && tiles[index - 1] == 0) { // check left
-                    targetIndex = index - 1;
-                } else if (index + 1 < tiles.length && tiles[index + 1] == 0) { // check right
-                    targetIndex = index + 1;
-                } else if (index - _max >= 0 && tiles[index - _max] == 0) { //check up
-                    targetIndex = index - _max;
-                } else if (index + _max < tiles.length && tiles[index + _max] == 0) { // check down
-                    targetIndex = index + _max;
-                }
-
-                if (targetIndex != -1) {
-                    var temp = tiles[targetIndex];
-                    tiles[targetIndex] = tiles[index];
-                    tiles[index] = temp;
-                    renderTiles();
-                }
-
-                event.preventDefault();
-            };
-
-            // renderTiles($('.eight-puzzle'));
-        };
-
-    </script>
+          var shiftTile = function (index, len) {
+              var _max = 3;
+              if (len === 16) {
+                  _max = 4;
+              }
+              var targetIndex = -1;
+              if (index - 1 >= 0 && tiles[index - 1] == 0) { // check left
+                  targetIndex = index - 1;
+              } else if (index + 1 < tiles.length && tiles[index + 1] == 0) { // check right
+                  targetIndex = index + 1;
+              } else if (index - _max >= 0 && tiles[index - _max] == 0) { //check up
+                  targetIndex = index - _max;
+              } else if (index + _max < tiles.length && tiles[index + _max] == 0) { // check down
+                  targetIndex = index + _max;
+              }
+              if (targetIndex != -1) {
+                  var temp = tiles[targetIndex];
+                  tiles[targetIndex] = tiles[index];
+                  tiles[index] = temp;
+                  renderTiles();
+              }
+              event.preventDefault();
+          };
+      };
+  </script>
 </body>
 </html>
