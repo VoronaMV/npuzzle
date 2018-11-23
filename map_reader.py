@@ -9,17 +9,24 @@ class NPuzzlesMap:
 
     MIN_SHAPE = (3, 3)
 
-    def __init__(self, shape: tuple, initial_map: np.ndarray, notation='snail'):
+    def __init__(self, shape: tuple, initial_map: np.ndarray, solution_case):
         if shape < self.MIN_SHAPE:
             raise self.BadMapError()
+        dimension, _ = shape
+        terminal_array = self._generate_terminal_state(dimension, solution_case)
+        State.terminal_map = terminal_array
+
         self.initial_map = initial_map
         self.initial_state = State(self.initial_map)
-        dimension, _ = shape
-
-        # notation_dict = TERMINAL_STATES.get(notation)
-
-        terminal_array = TERMINAL_STATES.get(dimension)
+        # solutions_dict = TERMINAL_STATES.get(solution_case)
+        # terminal_array = solutions_dict.get(dimension)
+        # terminal_array = TERMINAL_STATES.get(dimension)
         self.terminal_state = State(terminal_array)
+
+    def _generate_terminal_state(self, dimension: int, solution_case: str='snail') -> np.ndarray:
+        solutions_dict = TERMINAL_STATES.get(solution_case)
+        terminal_array = solutions_dict.get(dimension)
+        return terminal_array
 
     @staticmethod
     def __map_from_file(filename: str) -> np.ndarray:
@@ -55,14 +62,14 @@ class NPuzzlesMap:
         return np.array(start_map)
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, solution_case, filename):
         initial_map = cls.__map_from_file(filename)
-        return cls(initial_map.shape, initial_map)
+        return cls(initial_map.shape, initial_map, solution_case)
 
     @classmethod
-    def from_string(cls, string_map):
+    def from_string(cls, solution_case, string_map):
         initial_map = cls.__map_from_string(string_map)
-        return cls(initial_map.shape, initial_map)
+        return cls(initial_map.shape, initial_map, solution_case)
 
     class BadMapError(Exception):
         def __init__(self, message='Bad map', error=None):

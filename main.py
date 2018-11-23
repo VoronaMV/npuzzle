@@ -1,50 +1,37 @@
 import time
-import argparse
 from generator import generate_puzzle
 from rules import Rule
 from map_reader import NPuzzlesMap
 from queues import StatePQueue, StateDQueue
-from utils import is_solvable, get_size_comlexity
+from heuristics import PuzzleHeuristic
+from utils import is_solvable, get_size_comlexity, argument_parser
 
 
 if __name__ == '__main__':
-    generator = argparse.ArgumentParser(add_help=False, formatter_class=argparse.RawTextHelpFormatter)
-    generator.add_argument('-G', '--generate', type=int, help="Size of the puzzle's side. Must be >= 3.", default=3,
-                           dest='size')
-    generator.add_argument("-s", "--solvable", action="store_true", default=False,
-                           help="Forces generation of a solvable puzzle. Overrides -u.")
-    generator.add_argument("-u", "--unsolvable", action="store_true", default=False,
-                           help="Forces generation of an unsolvable puzzle")
-    generator.add_argument("-i", "--iterations", type=int, default=10000, help="Number of passes")
-
-    parser = argparse.ArgumentParser(parents=[generator], formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('--file', default='', type=str, help='Enter a path to file with puzzle',)
-    parser.add_argument('-H', '--heuristics', choices=['M', 'ML', 'H', 'E', 'D'], default='M',
-                        dest='heuristics',
-                        help='''Choose one of heuristics to solve the puzzle.
-M - for Manhattan distance.
-ML - for Manhattan distance + Linear conflict.
-H - for Hemming distance.
-E - for Euclidean distance.
-D - for Diagonal distance.
-Default value is M''')
-
-    args = parser.parse_args()
 
     start_time = time.time()
-    Rule.choose_heuristics(args.heuristics)
+    args = argument_parser()
+
+    solution_case = 'ordinary' if args.ordinary else 'snail'
+
     if args.file:
-        npazzle = NPuzzlesMap.from_file(filename=args.file)
+        npazzle = NPuzzlesMap.from_file(solution_case, filename=args.file)
     else:
         string_puzzle = generate_puzzle(args)
-        npazzle = NPuzzlesMap.from_string(string_puzzle)
+        npazzle = NPuzzlesMap.from_string(solution_case, string_puzzle)
+
+    if args.greedy and args.unicost:
+        print("Uniform cost and Greedy searches don't work together! Use -h option for help.")
+        exit(0)
+
+    heuristics = PuzzleHeuristic().get_heuristic(args.heuristics, args.unicost)
 
     initial_state = npazzle.initial_state
-    initial_state.f = initial_state.g + Rule.heuristics(initial_state)
+    initial_state.f = initial_state.g + heuristics.get_total_h(initial_state)
 
     terminal_state = npazzle.terminal_state
 
-    _open = StatePQueue(maxsize=8)
+    _open = StatePQueue(maxsize=args.q_size)
     _close = StateDQueue()
     _open.put_nowait(initial_state)
     # print(initial_state)
@@ -55,7 +42,6 @@ Default value is M''')
 
     while not _open.empty():
         min_state = _open.get_nowait()
-
         if min_state == terminal_state:
             solution = StateDQueue(elem for elem in _close.reverse_to_head(min_state))
             solution.reverse()
@@ -82,16 +68,16 @@ Default value is M''')
             if neighbour in _close:
                 continue
 
-            g = min_state.g + Rule.distance(min_state, neighbour)
+            g = min_state.g + Rule.distance(args.greedy)
 
             if neighbour not in _open:
                 neighbour.parent = min_state
-                neighbour.set_metrics(g=g, heuristic=Rule.heuristics)
+                neighbour.set_metrics(g=g, heuristic=heuristics.get_total_h)
                 _open.put_nowait(neighbour)
             elif g <= neighbour.g:
                 i = _open.queue.index(neighbour)
                 neighbour = _open.queue[i]
                 neighbour.parent = min_state
-                neighbour.set_metrics(g=g, heuristic=Rule.heuristics)
+                neighbour.set_metrics(g=g, heuristic=heuristics.get_total_h)
 
         params['size_complexity'] = get_size_comlexity(_open, _close)
