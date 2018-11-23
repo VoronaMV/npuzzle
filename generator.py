@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import random
-
+import numpy as np
+from utils import is_solvable
 
 def make_puzzle(s, solvable, iterations):
     def swap_empty(p):
@@ -28,7 +29,8 @@ def make_puzzle(s, solvable, iterations):
             p[-1], p[-2] = p[-2], p[-1]
         else:
             p[0], p[1] = p[1], p[0]
-
+    p = np.ndarray(p)
+    if is_solvable(p, s)
     return p
 
 
