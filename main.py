@@ -20,14 +20,11 @@ if __name__ == '__main__':
         string_puzzle = generate_puzzle(args)
         npazzle = NPuzzlesMap.from_string(solution_case, string_puzzle)
 
-    #
-    # if args.greedy:
-    #     pass
-    # elif args.unicost:
-    #     pass
-    # else:
+    if args.greedy and args.unicost:
+        print("Uniform cost and Greedy searches don't work together! Use -h option for help.")
+        exit(0)
 
-    heuristics = PuzzleHeuristic().get_heuristic(args.heuristics)
+    heuristics = PuzzleHeuristic().get_heuristic(args.heuristics, args.unicost)
 
     initial_state = npazzle.initial_state
     initial_state.f = initial_state.g + heuristics.get_total_h(initial_state)

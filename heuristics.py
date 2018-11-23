@@ -105,15 +105,23 @@ class Diagonal(Heuristics):
         return total_sum
 
 
+class Unicost(Heuristics):
+    """Heuristics for Uniform-cost search (h is always 0)"""
+    def get_total_h(self, node: State) -> int:
+        return 0
+
+
 class Heuristic:
 
-    def get_heuristic(self, name):
+    def get_heuristic(self, name, unicost):
         raise NotImplementedError()
 
 
 class PuzzleHeuristic(Heuristic):
 
-    def get_heuristic(self, name):
+    def get_heuristic(self, name, unicost):
+        if unicost:
+            return Unicost()
         if name == 'M':
             return Manhattan()
         elif name == 'ML':

@@ -68,9 +68,12 @@ The bigger size = the shorter way, but longer time.
 Default value is 8''', dest='q_size')
     parser.add_argument('-o', '--ordinary', help='Changes the terminal state to Ordinary. Default is Snail',
                         action='store_true')
-    parser.add_argument('-uc', '--uniformcost', action='store_true', help='Uses uniform-cost search as basis',
+    parser.add_argument('-uc', '--uniformcost', action='store_true', help='''Uses uniform-cost search as basis. 
+Note that this is just like breadth first search (because the path costs are all the same)
+Won\'t work together with -g option.''',
                         dest='unicost')
-    parser.add_argument('-g', '--greedy', action='store_true', help='Uses greedy search as basis')
+    parser.add_argument('-g', '--greedy', action='store_true', help='Uses greedy search as basis. '
+                                                                    'Won\'t work together with -g option')
 
     args = parser.parse_args()
     print(args)
