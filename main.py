@@ -4,6 +4,7 @@ from rules import Rule
 from map_reader import NPuzzlesMap
 from queues import StatePQueue, StateDQueue
 from utils import is_solvable, argument_parser
+from heuristics import PuzzleHeuristic
 
 
 if __name__ == '__main__':
@@ -11,7 +12,6 @@ if __name__ == '__main__':
     start_time = time.time()
     args = argument_parser()
 
-    Rule.choose_heuristics(args.heuristics)
     solution_case = 'ordinary' if args.ordinary else 'snail'
 
     if args.file:
@@ -20,8 +20,17 @@ if __name__ == '__main__':
         string_puzzle = generate_puzzle(args)
         npazzle = NPuzzlesMap.from_string(solution_case, string_puzzle)
 
+    #
+    # if args.greedy:
+    #     pass
+    # elif args.unicost:
+    #     pass
+    # else:
+
+    heuristics = PuzzleHeuristic().get_heuristic(args.heuristics)
+
     initial_state = npazzle.initial_state
-    initial_state.f = initial_state.g + Rule.heuristics(initial_state)
+    initial_state.f = initial_state.g + heuristics.get_total_h(initial_state)
 
     terminal_state = npazzle.terminal_state
 
@@ -56,14 +65,17 @@ if __name__ == '__main__':
             if neighbour in _close:
                 continue
 
-            g = min_state.g + Rule.distance(min_state, neighbour)
+            g = min_state.g + Rule.distance(args.greedy)
 
             if neighbour not in _open:
                 neighbour.parent = min_state
-                neighbour.set_metrics(g=g, heuristic=Rule.heuristics)
+                neighbour.set_metrics(g=g, heuristic=heuristics.get_total_h)
                 _open.put_nowait(neighbour)
             elif g <= neighbour.g:
                 i = _open.queue.index(neighbour)
                 neighbour = _open.queue[i]
                 neighbour.parent = min_state
-                neighbour.set_metrics(g=g, heuristic=Rule.heuristics)
+                neighbour.set_metrics(g=g, heuristic=heuristics.get_total_h)
+
+#for uniform cost and greedy
+#http://www.sci.brooklyn.cuny.edu/~chipp/cis32/lectures/Lecture6.pdf

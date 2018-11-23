@@ -13,13 +13,6 @@ TERMINAL_STATES = {
         5: ""}
 }
 
-# TERMINAL_STATES = {
-#         # 3: np.array([[1, 2, 3], [4, 5, 6], [7, 8, 0]]),
-#         # 4: np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 0]]),
-#         3: np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]]),
-#         4: np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]]),
-# }
-
 
 def get_size_comlexity(_open, _close, *args):
     return len(_open) + len(_close) + len(args)
@@ -59,7 +52,7 @@ def argument_parser():
     generator.add_argument("-i", "--iterations", type=int, default=10000, help="Number of passes")
 
     parser = argparse.ArgumentParser(parents=[generator], formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('--file', default='', type=str, help='Enter a path to file with puzzle',)
+    parser.add_argument('-F', '--file', default='', type=str, help='Enter a path to file with puzzle',)
     parser.add_argument('-H', '--heuristics', choices=['M', 'ML', 'H', 'E', 'D'], default='M',
                         dest='heuristics',
                         help='''Choose one of heuristics to solve the puzzle.
@@ -73,8 +66,11 @@ Default value is M''')
     parser.add_argument('-q', '--queuesize', type=int, default=8, help='''Here you can set the size of the Queue.
 The bigger size = the shorter way, but longer time.
 Default value is 8''', dest='q_size')
-    parser.add_argument('-O', '--ordinary', help='Changes the terminal state to Ordinary. Default is Snail',
+    parser.add_argument('-o', '--ordinary', help='Changes the terminal state to Ordinary. Default is Snail',
                         action='store_true')
+    parser.add_argument('-uc', '--uniformcost', action='store_true', help='Uses uniform-cost search as basis',
+                        dest='unicost')
+    parser.add_argument('-g', '--greedy', action='store_true', help='Uses greedy search as basis')
 
     args = parser.parse_args()
     print(args)
