@@ -18,9 +18,9 @@ class StateABC(metaclass=ABCMeta):
         self.parent = parent
         self.g = parent.g + 1 if parent else 0
         # TODO: Make better way
-        if self.terminal_map is None:
-            dimension, _ = self._map.shape
-            self.terminal_map = TERMINAL_STATES.get(dimension)
+        # if self.terminal_map is None:
+        #     dimension, _ = self._map.shape
+        #     self.terminal_map = TERMINAL_STATES.get(dimension)
 
         self.empty_puzzle_coord = self.empty_element_coordinates(self._map)
         if heuristic:
