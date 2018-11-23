@@ -24,7 +24,7 @@ class StateABC(metaclass=ABCMeta):
 
         self.empty_puzzle_coord = self.empty_element_coordinates(self._map)
         if heuristic:
-            self.f = g + heuristic(self)
+            self.f = self.g + heuristic(self)
         else:
             self.f = None
         self.hash = sha1(self._map).hexdigest()
