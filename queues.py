@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 from abstracts import StateDQueueABC, StatePQueueABC
 
 
@@ -28,10 +29,10 @@ class StateDQueue(StateDQueueABC):
         return next(matches, False)
 
     def __str__(self):
-        # TODO: Change it
         res = ''
         for elem in self:
             res += str(elem) + '\n\n'
+        res = res.replace('[[', ' ').replace(']]', ' ').replace('[', '').replace(']', '').strip()
         return res
 
     def to_json(self):
@@ -43,6 +44,10 @@ class StateDQueue(StateDQueueABC):
             result['moves'].append(node._map.tolist())
         return json.dumps(result)
 
+    @staticmethod
+    def copy_to_server_result(src, destination='server/result'):
+        shutil.copy(src, destination)
+
     def to_file(self, filename):
         dirname = 'result'
         os.makedirs(dirname, exist_ok=True)
@@ -52,6 +57,7 @@ class StateDQueue(StateDQueueABC):
         full_path = os.path.join(dirname, full_filename)
         with open(full_path, 'w') as f:
             f.write(self.to_json())
+        self.copy_to_server_result(full_path)
 
 
 class StatePQueue(StatePQueueABC):

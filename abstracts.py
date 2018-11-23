@@ -84,6 +84,8 @@ class StateABC(metaclass=ABCMeta):
 
 class StatePQueueABC(PriorityQueue, metaclass=ABCMeta):
 
+    time_complexity = 0
+
     @abstractmethod
     def __contains__(self, item: StateABC) -> bool:
         pass
@@ -93,8 +95,12 @@ class StatePQueueABC(PriorityQueue, metaclass=ABCMeta):
         pass
 
     def put_nowait(self, item):
-        if self.maxsize and self.maxsize == self.qsize():
+        qsize = self.qsize()
+        if self.maxsize and self.maxsize == qsize:
+            self.time_complexity = qsize
             self.pop_max()
+        else:
+            self.time_complexity = qsize + 1
         return super().put_nowait(item)
 
     def pop_max(self):
