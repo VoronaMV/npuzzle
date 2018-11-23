@@ -1,3 +1,5 @@
+import os
+import json
 from abstracts import StateDQueueABC, StatePQueueABC
 
 
@@ -31,6 +33,25 @@ class StateDQueue(StateDQueueABC):
         for elem in self:
             res += str(elem) + '\n\n'
         return res
+
+    def to_json(self):
+        result = {
+            'moves': [],
+            'moves_amount': len(self)
+        }
+        for node in self:
+            result['moves'].append(node._map.tolist())
+        return json.dumps(result)
+
+    def to_file(self, filename):
+        dirname = 'result'
+        os.makedirs(dirname, exist_ok=True)
+        extension = '.json'
+        filename, *_ = filename.split('.')
+        full_filename = filename + extension
+        full_path = os.path.join(dirname, full_filename)
+        with open(full_path, 'w') as f:
+            f.write(self.to_json())
 
 
 class StatePQueue(StatePQueueABC):

@@ -41,11 +41,11 @@ if __name__ == '__main__':
             moves_number = len(solution)
             end_time = time.time()
             delta = end_time - start_time
-            # print(str(solution))
-            # print('seconds: ', delta)
-            # print('open', _open.qsize())
-            # print(f'Moves: {moves_number}')
-
+            print(str(solution))
+            print('seconds: ', delta)
+            print('open', _open.qsize())
+            print(f'Moves: {moves_number}')
+            solution.to_file('res.json')
             # exit(str(solution))
             exit()
 
