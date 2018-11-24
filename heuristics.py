@@ -47,9 +47,6 @@ class Manhattan(Heuristics):
 
 class ManhattanLinear(Heuristics):
 
-    @staticmethod
-    def check_linear_conflict(value, t_value, indx_pair, t_indx_pair):
-        pass
 
     @staticmethod
     def get_row_conflict(terminal_map, current_map, row):
@@ -58,42 +55,47 @@ class ManhattanLinear(Heuristics):
         terminal_map_row = terminal_map[row, :]
         intersection_arr = np.intersect1d(current_map_row, terminal_map_row)
         for i, elem in enumerate(current_map_row):
-            if elem in intersection_arr:
-                for puzzle in current_map_row[i:]:
-                    if elem > puzzle:
-                        conflict_sum += 1
+            for puzzle in current_map_row[i:]:
+                if elem in intersection_arr and elem > puzzle:
+                    conflict_sum += 1
+
         return conflict_sum
 
     @staticmethod
     def get_col_conflict(terminal_map, current_map, col):
         conflict_sum = 0
-        current_map_row = current_map[:, col]
-        terminal_map_row = terminal_map[:, col]
-        intersection_arr = np.intersect1d(current_map_row, terminal_map_row)
-        for i, elem in enumerate(current_map_row):
-            if elem in intersection_arr:
-                for puzzle in current_map_row[i:]:
-                    if elem > puzzle:
-                        conflict_sum += 1
+        current_map_col = current_map[:, col]
+        terminal_map_col = terminal_map[:, col]
+        intersection_arr = np.intersect1d(current_map_col, terminal_map_col)
+        for i, elem in enumerate(current_map_col):
+            for puzzle in current_map_col[i:]:
+                if elem in intersection_arr and elem > puzzle:
+                    conflict_sum += 1
         return conflict_sum
 
     def get_total_h(self, node: State) -> int:
         conflict_sum = 0
         manhattan_sum = 0
+        check_row = -1
+        check_col = -1
         for indx_pair, value in np.ndenumerate(node._map):
+
             row, col = indx_pair
-            conflict_sum += self.get_row_conflict(node.terminal_map, node._map, row)
-            conflict_sum += self.get_col_conflict(node.terminal_map, node._map, col)
+            if check_row != row:
+                check_row = row
+                conflict_sum += self.get_row_conflict(node.terminal_map, node._map, row)
+                conflict_sum += self.get_col_conflict(node.terminal_map, node._map, row)
 
             # Compare with indexes of terminal state
             for t_indx_pair, t_value in np.ndenumerate(node.terminal_map):
-                if self.check_linear_conflict(value, t_value, indx_pair, t_indx_pair):
-                    conflict_sum += 1
+                # if self.check_linear_conflict(value, t_value, indx_pair, t_indx_pair):
+                #     conflict_sum += 1
                 if value == t_value:
                     diff = np.subtract(indx_pair, t_indx_pair)
                     abs_diff = abs(diff)
                     manhattan_sum += sum(abs_diff)
                     break
+        # print('CON_SUM', conflict_sum)
         return manhattan_sum + (2 * conflict_sum)
 
 
