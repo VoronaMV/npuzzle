@@ -48,7 +48,7 @@ if __name__ == '__main__':
             params['moves_amount'] = len(solution)
             end_time = time.time()
             delta = end_time - start_time
-            print(str(solution))
+            # print(str(solution))
             print('time complexity=', _open.time_complexity)
             print('size complexity=', params.get('size_complexity'))
             print('seconds: ', delta)
