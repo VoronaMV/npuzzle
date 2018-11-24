@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 import random
+import numpy as np
+from utils import is_solvable
 
 
-def make_puzzle(s, solvable, iterations):
+def make_puzzle(s, solvable, iterations, solution_case):
     def swap_empty(p):
         idx = p.index(0)
         poss = []
@@ -20,15 +22,22 @@ def make_puzzle(s, solvable, iterations):
         p[swi] = 0
 
     p = make_goal(s)
+    # print(p)
     for i in range(iterations):
         swap_empty(p)
-
+    print(p)
     if not solvable:
         if p[0] == 0 or p[1] == 0:
             p[-1], p[-2] = p[-2], p[-1]
         else:
             p[0], p[1] = p[1], p[0]
-
+    np_arr = np.array(p)
+    np_arr = np_arr.reshape((s,s))
+    if solvable:
+        if is_solvable(np_arr, s, solution_case):
+            return p
+        else:
+            make_puzzle(s, solvable, iterations, solution_case)
     return p
 
 
@@ -69,7 +78,7 @@ def stringify_map(map, map_size):
     return stringified_map
 
 
-def generate_puzzle(args):
+def generate_puzzle(args, solution_case):
     if args.solvable and args.unsolvable:
         print("Can't be both solvable AND unsolvable, dummy !")
         exit(1)
@@ -79,16 +88,38 @@ def generate_puzzle(args):
         exit(1)
 
     if args.solvable:
-        is_solvable = True
+        solvable = True
     elif args.unsolvable:
-        is_solvable = False
+        solvable = False
     else:
-        is_solvable = random.choice([True, False])
+        solvable = random.choice([True, False])
 
     map_size = args.size
 
-    puzzle = make_puzzle(map_size, solvable=is_solvable, iterations=args.iterations)
+    # np_arr = np.ndarray(p)
+    # if solvable:
+    #     if is_solvable(np_arr, s, solution_case):
+    #         return p
+    #     else:
+    #         make_puzzle(s, solvable, iterations, solution_case)
 
+    puzzle = make_puzzle(map_size, solvable=solvable, iterations=args.iterations, solution_case=solution_case)
+    # p = np.ndarray(puzzle)
+    # if solvable:
+    #     if is_solvable(p, map_size, solution_case):
+    #         is_solvable_str = "solvable" if is_solvable else "unsolvable"
+    #         print(f"# This puzzle is {is_solvable_str}")
+    #         # print(f'{map_size}')
+    #
+    #         stringified_map = str(map_size) + '\n' + stringify_map(puzzle, map_size)
+    #         print(stringified_map, end='')
+    #         return stringified_map
+    #     else:
+    #         args.iterations -= random.randint(1, 5000)
+    #         print(args.iterations)
+    #         generate_puzzle(args, solution_case)
+
+    #
     is_solvable_str = "solvable" if is_solvable else "unsolvable"
     print(f"# This puzzle is {is_solvable_str}")
     # print(f'{map_size}')

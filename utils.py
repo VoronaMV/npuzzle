@@ -11,6 +11,7 @@ TERMINAL_STATES = {
         3: np.array([[1, 2, 3], [8, 0, 4], [7, 6, 5]]),
         4: np.array([[1, 2, 3, 4], [12, 13, 14, 5], [11, 0, 15, 6], [10, 9, 8, 7]]),
         5: ""}
+}
 
 
 def get_size_comlexity(_open, _close=[], *args):
@@ -27,11 +28,13 @@ def is_solvable(_map: np.ndarray, dimension=4, solution_type='snail') -> bool:
             if elem > puzzle:
                 inversions += 1
     print('inversions number=', inversions)
+    print('st', solution_type)
     is_inversions_even = True if inversions % 2 == 0 else False
 
     if dimension % 2 != 0:
         if solution_type == 'snail':
             is_inversions_even = not is_inversions_even
+        print('res', is_inversions_even)
         return is_inversions_even
     if 0 in _map[::-2]:
         # inversions even
@@ -69,12 +72,12 @@ The bigger size = the shorter way, but longer time.
 Default value is 8''', dest='q_size')
     parser.add_argument('-o', '--ordinary', help='Changes the terminal state to Ordinary. Default is Snail',
                         action='store_true')
-    parser.add_argument('-uc', '--uniformcost', action='store_true', help='''Uses uniform-cost search as basis. 
+    parser.add_argument('-uc', '--uniformcost', action='store_true', help='''Use uniform-cost search as basis. 
 Note that this is just like breadth first search (because the path costs are all the same)
 Won\'t work together with -g option.''',
                         dest='unicost')
-    parser.add_argument('-g', '--greedy', action='store_true', help='Uses greedy search as basis. '
-                                                                    'Won\'t work together with -g option')
+    parser.add_argument('-g', '--greedy', action='store_true', help='''Use greedy search as basis.
+Won\'t work together with -g option''')
 
     args = parser.parse_args()
     print(args)

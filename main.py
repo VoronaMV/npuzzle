@@ -17,7 +17,7 @@ if __name__ == '__main__':
     if args.file:
         npazzle = NPuzzlesMap.from_file(solution_case, filename=args.file)
     else:
-        string_puzzle = generate_puzzle(args)
+        string_puzzle = generate_puzzle(args, solution_case)
         npazzle = NPuzzlesMap.from_string(solution_case, string_puzzle)
 
     if args.greedy and args.unicost:
