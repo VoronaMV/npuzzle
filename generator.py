@@ -32,12 +32,12 @@ def make_puzzle(s, solvable, iterations, solution_case):
         else:
             p[0], p[1] = p[1], p[0]
     np_arr = np.array(p)
-    np_arr = np_arr.reshape((s,s))
+    np_arr = np_arr.reshape((s, s))
     if solvable:
         if is_solvable(np_arr, s, solution_case):
             return p
         else:
-            make_puzzle(s, solvable, iterations, solution_case)
+            return make_puzzle(s, solvable, iterations, solution_case)
     return p
 
 
@@ -95,34 +95,10 @@ def generate_puzzle(args, solution_case):
         solvable = random.choice([True, False])
 
     map_size = args.size
-
-    # np_arr = np.ndarray(p)
-    # if solvable:
-    #     if is_solvable(np_arr, s, solution_case):
-    #         return p
-    #     else:
-    #         make_puzzle(s, solvable, iterations, solution_case)
-
     puzzle = make_puzzle(map_size, solvable=solvable, iterations=args.iterations, solution_case=solution_case)
-    # p = np.ndarray(puzzle)
-    # if solvable:
-    #     if is_solvable(p, map_size, solution_case):
-    #         is_solvable_str = "solvable" if is_solvable else "unsolvable"
-    #         print(f"# This puzzle is {is_solvable_str}")
-    #         # print(f'{map_size}')
-    #
-    #         stringified_map = str(map_size) + '\n' + stringify_map(puzzle, map_size)
-    #         print(stringified_map, end='')
-    #         return stringified_map
-    #     else:
-    #         args.iterations -= random.randint(1, 5000)
-    #         print(args.iterations)
-    #         generate_puzzle(args, solution_case)
 
-    #
     is_solvable_str = "solvable" if is_solvable else "unsolvable"
     print(f"# This puzzle is {is_solvable_str}")
-    # print(f'{map_size}')
 
     stringified_map = str(map_size) + '\n' + stringify_map(puzzle, map_size)
     print(stringified_map, end='')
