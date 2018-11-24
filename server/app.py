@@ -29,7 +29,6 @@ def get_file_data():
     data = json.loads(data)
     for i, elem in enumerate(data['moves']):
         data['moves'][i] = list(chain(*elem))
-    print(data)
     return jsonify(data)
 
 
