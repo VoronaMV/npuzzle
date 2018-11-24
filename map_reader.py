@@ -28,12 +28,26 @@ class NPuzzlesMap:
         terminal_array = solutions_dict.get(dimension)
         return terminal_array
 
-    @staticmethod
-    def __map_from_file(filename: str) -> np.ndarray:
+    @classmethod
+    def _validate_map_list(cls, _map: list, dimension, raise_exception=True) -> bool:
+        unique_elements = set(_map)
+        elements_required = dimension ** 2
+        if len(unique_elements) != len(_map):
+            raise cls.BadMapError()
+        if not isinstance(dimension, int):
+            raise cls.BadMapError()
+        if len(_map) != elements_required:
+            raise cls.BadMapError()
+        terminal_set = {elem for elem in range(elements_required)}
+        if terminal_set.intersection(unique_elements) != terminal_set:
+            raise cls.BadMapError()
+
+    @classmethod
+    def __map_from_file(cls, filename: str) -> np.ndarray:
         dimension = None
         start_map = []
         if not os.path.isfile(filename):
-            raise Exception(f'File {filename} does not exist')
+            raise cls.FileDoesNotExist(filename=filename)
         with open(filename, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -41,9 +55,13 @@ class NPuzzlesMap:
                     dimension = int(line)
                 elif dimension is not None:
                     row = re.findall(r'\d+', line)
+                    if len(row) != dimension:
+                        continue
                     row = [int(digit) for digit in row[:dimension]]
                     start_map.append(row)
-        return np.array(start_map)
+        created_map = np.array(start_map)
+        cls._validate_map_list(created_map.flatten(), dimension, raise_exception=True)
+        return created_map
 
     @staticmethod
     def __map_from_string(string_map: str) -> np.ndarray:
@@ -73,6 +91,12 @@ class NPuzzlesMap:
 
     class BadMapError(Exception):
         def __init__(self, message='Bad map', error=None):
+            super().__init__(message)
+            self.error = error
+
+    class FileDoesNotExist(Exception):
+        def __init__(self, message='Bad map', filename='', error=None):
+            message = f'File {filename} does not exist'
             super().__init__(message)
             self.error = error
 

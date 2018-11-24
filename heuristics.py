@@ -166,4 +166,4 @@ class PuzzleHeuristic(Heuristic):
         elif name == 'D':
             return Diagonal()
         else:
-            WrongHeuristicsError()
+            raise WrongHeuristicsError()

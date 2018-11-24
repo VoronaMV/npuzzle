@@ -22,7 +22,6 @@ def get_size_comlexity(_open, _close=[], *args):
 
 
 def is_solvable(_map: np.ndarray, dimension=4, solution_type='snail') -> bool:
-    print('MAP', _map)
     flat_map = _map.flatten()
     inversions = 0
     for i, puzzle in enumerate(flat_map):
@@ -31,14 +30,11 @@ def is_solvable(_map: np.ndarray, dimension=4, solution_type='snail') -> bool:
         for elem in flat_map[:i]:
             if elem > puzzle:
                 inversions += 1
-    print('inversions number =', inversions)
-    print('solution type: ', solution_type)
     is_inversions_even = True if inversions % 2 == 0 else False
 
     if dimension % 2 != 0:
         if solution_type == 'snail':
             is_inversions_even = not is_inversions_even
-        print('IS SOLVABLE -', is_inversions_even)
         return is_inversions_even
     if 0 in _map[::-2]:
         # inversions even
@@ -84,5 +80,4 @@ Won\'t work together with -g option.''',
 Won\'t work together with -g option''')
 
     args = parser.parse_args()
-    print(args)
     return args

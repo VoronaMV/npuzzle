@@ -14,11 +14,15 @@ if __name__ == '__main__':
 
     solution_case = 'ordinary' if args.ordinary else 'snail'
 
-    if args.file:
-        npazzle = NPuzzlesMap.from_file(solution_case, filename=args.file)
-    else:
-        string_puzzle = generate_puzzle(args, solution_case)
-        npazzle = NPuzzlesMap.from_string(solution_case, string_puzzle)
+    try:
+        if args.file:
+            npazzle = NPuzzlesMap.from_file(solution_case, filename=args.file)
+        else:
+            string_puzzle = generate_puzzle(args, solution_case)
+            npazzle = NPuzzlesMap.from_string(solution_case, string_puzzle)
+    except (NPuzzlesMap.BadMapError, NPuzzlesMap.FileDoesNotExist) as e:
+        print(e)
+        exit(0)
 
     if args.greedy and args.unicost:
         print("Uniform cost and Greedy searches don't work together! Use -h option for help.")
@@ -34,8 +38,9 @@ if __name__ == '__main__':
     _open = StatePQueue(maxsize=args.q_size)
     _close = StateDQueue()
     _open.put_nowait(initial_state)
-    # print(initial_state)
-    print('solavble?', is_solvable(initial_state._map, dimension=initial_state._map.shape[1]))
+
+    if not is_solvable(initial_state._map, dimension=initial_state._map.shape[1], solution_type=solution_case):
+        exit('Unsolvable map')
 
     params = dict.fromkeys(['size_complexity', 'time_complexity', 'moves_amount'], 0)
     params['size_complexity'] = get_size_comlexity(_open, _close)
@@ -48,17 +53,15 @@ if __name__ == '__main__':
             params['moves_amount'] = len(solution)
             end_time = time.time()
             delta = end_time - start_time
-            # print(str(solution))
+            print(str(solution))
             print('time complexity=', _open.time_complexity)
             print('size complexity=', params.get('size_complexity'))
-            print('seconds: ', delta)
-            # print('open', _open.qsize())
             print(f'Moves: {params.get("moves_amount")}')
+            print('seconds: ', delta)
             try:
                 solution.to_file('res.json')
             except:
                 pass
-            # exit(str(solution))
             exit()
 
         _close.append(min_state)

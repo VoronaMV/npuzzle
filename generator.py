@@ -96,8 +96,6 @@ def generate_puzzle(args, solution_case):
     map_size = args.size
     puzzle = make_puzzle(map_size, solvable=solvable, iterations=args.iterations, solution_case=solution_case)
 
-    print(args.solvable)
-
     is_solvable_str = "solvable" if solvable else "unsolvable"
     print(f"# This puzzle is {is_solvable_str}")
 
