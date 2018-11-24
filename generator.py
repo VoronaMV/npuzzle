@@ -22,10 +22,8 @@ def make_puzzle(s, solvable, iterations, solution_case):
         p[swi] = 0
 
     p = make_goal(s)
-    # print(p)
     for i in range(iterations):
         swap_empty(p)
-    print(p)
     if not solvable:
         if p[0] == 0 or p[1] == 0:
             p[-1], p[-2] = p[-2], p[-1]
@@ -38,6 +36,7 @@ def make_puzzle(s, solvable, iterations, solution_case):
             return p
         else:
             return make_puzzle(s, solvable, iterations, solution_case)
+    # else:
     return p
 
 
@@ -97,7 +96,9 @@ def generate_puzzle(args, solution_case):
     map_size = args.size
     puzzle = make_puzzle(map_size, solvable=solvable, iterations=args.iterations, solution_case=solution_case)
 
-    is_solvable_str = "solvable" if is_solvable else "unsolvable"
+    print(args.solvable)
+
+    is_solvable_str = "solvable" if solvable else "unsolvable"
     print(f"# This puzzle is {is_solvable_str}")
 
     stringified_map = str(map_size) + '\n' + stringify_map(puzzle, map_size)
